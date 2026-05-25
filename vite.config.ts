@@ -17,9 +17,15 @@ const PROD_CSP = [
 ].join('; ')
 
 // https://vite.dev/config/
-// ローカル開発: `npm run dev` の既定 URL は http://localhost:5173/（ポートは Vite 既定の 5173）
+// 開発: `npm run dev` は http://localhost:5173/ で動かす（base は '/'）
+// 本番: GitHub Pages のプロジェクトサイト配下 `/work-manager/` で配信
 // PWA は localhost でもインストール可能なため、開発時も Service Worker を有効化
-export default defineConfig(({ mode }) => ({
+export default defineConfig(({ mode, command }) => {
+  const isBuild = command === 'build'
+  const base = isBuild ? '/work-manager/' : '/'
+
+  return {
+  base,
   server: {
     port: 5173,
   },
@@ -29,7 +35,7 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        id: '/',
+        id: base,
         name: '仕事記録',
         short_name: '仕事記録',
         description: '勤務・作業の日時を記録するアプリ',
@@ -38,8 +44,8 @@ export default defineConfig(({ mode }) => ({
         display: 'standalone',
         display_override: ['standalone', 'browser'],
         orientation: 'any',
-        start_url: '/',
-        scope: '/',
+        start_url: base,
+        scope: base,
         lang: 'ja',
         dir: 'ltr',
         icons: [
@@ -88,4 +94,5 @@ export default defineConfig(({ mode }) => ({
         ]
       : []),
   ],
-}))
+  }
+})
