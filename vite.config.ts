@@ -19,7 +19,8 @@ const PROD_CSP = [
 // https://vite.dev/config/
 // 開発: `npm run dev` は http://localhost:5173/ で動かす（base は '/'）
 // 本番: GitHub Pages のプロジェクトサイト配下 `/work-manager/` で配信
-// PWA は localhost でもインストール可能なため、開発時も Service Worker を有効化
+// PWA は dev では無効化（Service Worker のキャッシュが古い index.html を返すと
+// /src/main.tsx の 404 などを引き起こすため）。動作確認は `npm run build && npm run preview` で。
 export default defineConfig(({ mode, command }) => {
   const isBuild = command === 'build'
   const base = isBuild ? '/work-manager/' : '/'
@@ -75,7 +76,7 @@ export default defineConfig(({ mode, command }) => {
         navigateFallbackDenylist: [/^\/api\//],
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
         navigateFallback: 'index.html',
         suppressWarnings: true,
       },
