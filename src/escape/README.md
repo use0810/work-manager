@@ -14,9 +14,13 @@
 
 ## 復活させたいとき
 
-1. `tsconfig.app.json` の `exclude` から `src/escape` を外す
-2. `App.tsx` で `src/escape/components/SheetsSyncModal` を import し直す
-3. `@react-oauth/google` の依存が必要（`package.json` に残してあります）
-4. `.env.local` の `VITE_GOOGLE_CLIENT_ID` を設定すると、ビルド時から有効化されます
+1. ファイルを元の場所に戻す
+   - `components/SheetsSyncModal.tsx` → `src/components/SheetsSyncModal.tsx`
+   - `utils/googleSheets.ts` → `src/utils/googleSheets.ts`
+   - 各ファイル先頭の `// @ts-nocheck — 退避フォルダ。...` 2 行コメントを削除
+2. `tsconfig.app.json` の `exclude` から `src/escape` を外す（フォルダごと消すならこの行も削除）
+3. `App.tsx` で `SheetsSyncModal` を import し直す
+4. `@react-oauth/google` の依存が必要（`package.json` に残してあります）
+5. `.env.local` の `VITE_GOOGLE_CLIENT_ID` を設定すると、ビルド時から有効化されます
 
-> 移設の際に相対 import が壊れている場合は、`../types` / `../../utils/storage` などへの相対パスを修正してください。
+> 凍結中のファイルは `// @ts-nocheck` を付けて IDE 解析からも外しています。`'../types'` 等の相対パスは元の場所前提のままなので、復元時に動作確認すれば問題なく通ります。

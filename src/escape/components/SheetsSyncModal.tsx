@@ -1,3 +1,5 @@
+// @ts-nocheck — 退避フォルダ。tsconfig.app.json で exclude しているが、IDE 単体解析時のノイズを抑止
+// 復活させる際はファイルを元の場所（src/components/）に戻し、このコメントを削除する
 import { googleLogout, useGoogleLogin } from '@react-oauth/google';
 import { useEffect, useState } from 'react';
 import type { WorkRecord } from '../types';
