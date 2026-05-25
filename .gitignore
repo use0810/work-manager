@@ -1,0 +1,44 @@
+# ===== Logs =====
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===== Dependencies =====
+node_modules
+
+# ===== Build outputs =====
+dist
+dist-ssr
+# vite-plugin-pwa が dev 時に生成するキャッシュ
+dev-dist
+# Vite の依存最適化キャッシュ
+.vite
+
+# ===== Test / Coverage =====
+coverage
+.nyc_output
+
+# ===== Environment files（Google OAuth キー等の秘密情報）=====
+# VITE_GOOGLE_CLIENT_ID などをコミットしない
+.env
+.env.*
+!.env.example
+
+# その他「.local」は Vite の規約で個人ローカル設定として除外される
+*.local
+
+# ===== Editor / OS =====
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

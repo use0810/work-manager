@@ -1,0 +1,550 @@
+/**
+ * カラーモード別のデザイントークン（すべての画面色はここで上書き可能）
+ * ダークは属性なし＝:root。それ以外は <html data-theme="…">。
+ *
+ * 成功色（--green 周り）: モードごとに色相を変え、アクセント色と補色・分割補色の
+ * 関係でそろえる（ダーク=ティール / ライト=深ティール / クリーム=青緑 / ベビーブルー=ライム / ペールピンク=エメラルド）。
+ */
+:root {
+  color-scheme: dark;
+
+  --radius: 8px;
+  --font-sans: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+
+  /* --- コア（既存変数互換） --- */
+  --bg: #0f1117;
+  --bg2: #181c27;
+  --bg3: #1e2335;
+  --border: #2a3050;
+  --accent: #4f8ef7;
+  --accent2: #6fa8ff;
+  --text: #e2e8f0;
+  --text2: #8b9cc8;
+  --red: #f87171;
+  /* 青系 UI の補色側：ティール（従来の黄緑よりクール） */
+  --green: #2dd4bf;
+  --shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+
+  /* --- オンボタン・強調 --- */
+  --on-primary: #ffffff;
+  --on-danger-solid: #ffffff;
+
+  /* --- シート連携ヘッダー等（成功色トーン） --- */
+  --border-success-toned: #134e4a;
+  --text-success-prominent: #5eead4;
+  --success-soft-10: rgba(45, 212, 191, 0.1);
+  --success-soft-12: rgba(45, 212, 191, 0.12);
+  --success-soft-22: rgba(45, 212, 191, 0.22);
+  --success-border-45: rgba(45, 212, 191, 0.45);
+  --success-border-30: rgba(45, 212, 191, 0.3);
+  --success-border-10: rgba(45, 212, 191, 0.1);
+  --text-on-success-soft: #99f6e4;
+  --text-on-success-soft-hover: #ccfbf1;
+
+  /* --- アクセントの半透明レイヤー --- */
+  --accent-soft-12: rgba(79, 142, 247, 0.12);
+  --accent-soft-15: rgba(79, 142, 247, 0.15);
+  --accent-soft-28: rgba(79, 142, 247, 0.28);
+  --accent-border-30: rgba(79, 142, 247, 0.3);
+  --accent-border-40: rgba(79, 142, 247, 0.4);
+  --focus-ring-accent: rgba(79, 142, 247, 0.25);
+
+  /* --- 危険操作・エラー系ソフト --- */
+  --danger-soft-10: rgba(248, 113, 113, 0.1);
+  --danger-border-45: rgba(248, 113, 113, 0.45);
+  --danger-text-muted: #fca5a5;
+  --danger-text-muted-hover: #fecaca;
+
+  /* --- オーバーレイ・ドロップシャドウ --- */
+  --overlay-scrim-82: rgba(0, 0, 0, 0.82);
+  --overlay-scrim-70: rgba(0, 0, 0, 0.7);
+  --overlay-scrim-20: rgba(0, 0, 0, 0.2);
+  --shadow-elevated: 0 8px 40px rgba(0, 0, 0, 0.6);
+  --shadow-elevated-soft: 0 4px 20px rgba(0, 0, 0, 0.6);
+  --shadow-drag: 0 4px 16px rgba(0, 0, 0, 0.45);
+
+  /* --- 外部サービス風ボタン（Drive / プッシュ等） --- */
+  --grad-drive-a: #3a7ab0;
+  --grad-drive-b: #2a5f8f;
+  --grad-drive-hover-a: #4a8cc8;
+  --grad-drive-hover-b: #3570a0;
+  --grad-push-a: #b45309;
+  --grad-push-b: #8f3d06;
+  --grad-push-hover-a: #c96a12;
+  --grad-push-hover-b: #a34a08;
+
+  /* --- 一覧テーブル列グループ（開始=青系 / 終了=緑系） --- */
+  --col-blue-soft: rgba(59, 130, 246, 0.07);
+  --col-blue-border: rgba(99, 160, 255, 0.35);
+  --col-emerald-soft: rgba(45, 212, 191, 0.07);
+  --col-emerald-border: rgba(94, 234, 212, 0.35);
+  --table-subheader-text: #5a6a8a;
+  --col-year-text: #5c6788;
+  --col-blue-faded: rgba(59, 130, 246, 0.035);
+  --col-emerald-faded: rgba(45, 212, 191, 0.035);
+  --group-start-bg: rgba(59, 130, 246, 0.15);
+  --group-start-text: #93c5fd;
+  --group-end-bg: rgba(45, 212, 191, 0.15);
+  --group-end-text: #5eead4;
+
+  --memo-empty: #3a4460;
+  --border-icon-btn: #2a3050;
+  /* 枠線のみのコピー／削除など（小さめ。暗背景向け） */
+  --btn-icon-fg: #b8c8e8;
+
+  --red-hover-solid: #ef4444;
+  --key-hint-sep: #3a4460;
+
+  /* --- 週タイムライン --- */
+  --timeline-drop-dashed: rgba(99, 160, 255, 0.25);
+  --timeline-today-bg: #1a2a50;
+  --timeline-weekend: #7dd3fc;
+  --timeline-grid-even: rgba(255, 255, 255, 0.01);
+  --timeline-grid-odd: rgba(255, 255, 255, 0.025);
+  --timeline-block-a: #2d5af0;
+  --timeline-block-b: #4f8ef7;
+  --timeline-block-sel-a: #2563eb;
+  --timeline-block-sel-b: #60a5fa;
+  --timeline-block-sel-border: #bfdbfe;
+  --timeline-block-sel-glow: 0 0 0 2px rgba(96, 165, 250, 0.55), 0 2px 14px rgba(37, 99, 235, 0.45);
+  --timeline-handle-hover: rgba(255, 255, 255, 0.15);
+  --timeline-block-text: rgba(255, 255, 255, 0.9);
+  --warning-amber: #fbbf24;
+
+  --btn-archive-border: #2a4060;
+  --btn-archive-text: #6fa8d0;
+
+  --restore-compare-list-bg: rgba(59, 130, 246, 0.15);
+  --restore-compare-list-text: #93c5fd;
+  --restore-compare-arch-bg: rgba(45, 212, 191, 0.15);
+  --restore-compare-arch-text: #5eead4;
+  --on-strong-green-btn: #042f2e;
+  --green-hover-solid: #5eead4;
+
+  --scrollbar-thumb-hover: #3a4a70;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #eef0f6;
+  --bg2: #ffffff;
+  --bg3: #e4e9f3;
+  --border: #c5cedf;
+  --accent: #3b6fd8;
+  --accent2: #2563eb;
+  --text: #1a2233;
+  --text2: #4a5670;
+  --red: #dc2626;
+  /* ニュートラル＋青アクセントに対し、やや青みの深ティール（補色で締める） */
+  --green: #0f766e;
+  --shadow: 0 2px 14px rgba(15, 23, 42, 0.12);
+
+  --on-primary: #ffffff;
+  --on-danger-solid: #ffffff;
+
+  --border-success-toned: #5eead4;
+  --text-success-prominent: #115e59;
+  --success-soft-10: rgba(15, 118, 110, 0.12);
+  --success-soft-12: rgba(15, 118, 110, 0.14);
+  --success-soft-22: rgba(15, 118, 110, 0.22);
+  --success-border-45: rgba(15, 118, 110, 0.42);
+  --success-border-30: rgba(15, 118, 110, 0.3);
+  --success-border-10: rgba(15, 118, 110, 0.11);
+  --text-on-success-soft: #134e4a;
+  --text-on-success-soft-hover: #0f3d3a;
+
+  --accent-soft-12: rgba(37, 99, 235, 0.1);
+  --accent-soft-15: rgba(37, 99, 235, 0.14);
+  --accent-soft-28: rgba(37, 99, 235, 0.22);
+  --accent-border-30: rgba(37, 99, 235, 0.28);
+  --accent-border-40: rgba(37, 99, 235, 0.38);
+  --focus-ring-accent: rgba(37, 99, 235, 0.28);
+
+  --danger-soft-10: rgba(220, 38, 38, 0.1);
+  --danger-border-45: rgba(220, 38, 38, 0.4);
+  --danger-text-muted: #b91c1c;
+  --danger-text-muted-hover: #991b1b;
+
+  --overlay-scrim-82: rgba(15, 23, 42, 0.58);
+  --overlay-scrim-70: rgba(15, 23, 42, 0.42);
+  --overlay-scrim-20: rgba(15, 23, 42, 0.06);
+  --shadow-elevated: 0 8px 40px rgba(15, 23, 42, 0.18);
+  --shadow-elevated-soft: 0 4px 20px rgba(15, 23, 42, 0.14);
+  --shadow-drag: 0 4px 16px rgba(15, 23, 42, 0.2);
+
+  --grad-drive-a: #3a7ab0;
+  --grad-drive-b: #2a5f8f;
+  --grad-drive-hover-a: #4a8cc8;
+  --grad-drive-hover-b: #3570a0;
+  --grad-push-a: #c2410c;
+  --grad-push-b: #9a3412;
+  --grad-push-hover-a: #ea580c;
+  --grad-push-hover-b: #c2410c;
+
+  --col-blue-soft: rgba(37, 99, 235, 0.08);
+  --col-blue-border: rgba(37, 99, 235, 0.28);
+  --col-emerald-soft: rgba(15, 118, 110, 0.08);
+  --col-emerald-border: rgba(45, 212, 191, 0.32);
+  --table-subheader-text: #64748b;
+  --col-year-text: #64748b;
+  --col-blue-faded: rgba(37, 99, 235, 0.04);
+  --col-emerald-faded: rgba(15, 118, 110, 0.04);
+  --group-start-bg: rgba(37, 99, 235, 0.14);
+  --group-start-text: #1d4ed8;
+  --group-end-bg: rgba(15, 118, 110, 0.12);
+  --group-end-text: #0f766e;
+
+  --memo-empty: #64748b;
+  --border-icon-btn: var(--border);
+  --btn-icon-fg: #1e293b;
+
+  --red-hover-solid: #ef4444;
+  --key-hint-sep: #94a3b8;
+
+  --timeline-drop-dashed: rgba(37, 99, 235, 0.28);
+  --timeline-today-bg: #dbeafe;
+  --timeline-weekend: #0369a1;
+  --timeline-grid-even: rgba(15, 23, 42, 0.03);
+  --timeline-grid-odd: rgba(15, 23, 42, 0.06);
+  --timeline-block-a: #2563eb;
+  --timeline-block-b: #60a5fa;
+  --timeline-block-sel-a: #1d4ed8;
+  --timeline-block-sel-b: #3b82f6;
+  --timeline-block-sel-border: #bfdbfe;
+  --timeline-block-sel-glow: 0 0 0 2px rgba(59, 130, 246, 0.45), 0 2px 14px rgba(37, 99, 235, 0.28);
+  --timeline-handle-hover: rgba(255, 255, 255, 0.35);
+  --timeline-block-text: rgba(255, 255, 255, 0.95);
+  --warning-amber: #d97706;
+
+  --btn-archive-border: #93c5fd;
+  --btn-archive-text: #1d4ed8;
+
+  --restore-compare-list-bg: rgba(37, 99, 235, 0.12);
+  --restore-compare-list-text: #1e40af;
+  --restore-compare-arch-bg: rgba(15, 118, 110, 0.12);
+  --restore-compare-arch-text: #0f766e;
+  --on-strong-green-btn: #ffffff;
+  --green-hover-solid: #14b8a6;
+
+  --scrollbar-thumb-hover: #94a3b8;
+}
+
+[data-theme="cream"] {
+  color-scheme: light;
+
+  /* 薄い面を白寄りにしてもや感を減らす（文字・アクセント等の濃色は維持） */
+  --bg: #faf6ef;
+  --bg2: #ffffff;
+  --bg3: #f4ede3;
+  --border: #d0c2a4;
+  --accent: #8b6914;
+  --accent2: #a67c00;
+  --text: #2c2418;
+  --text2: #5c5040;
+  --red: #b91c1c;
+  /* 暖色アクセントの補色：青緑ティールで「涼しげな成功」 */
+  --green: #0d9488;
+  --shadow: 0 2px 14px rgba(60, 48, 30, 0.1);
+
+  --on-primary: #fffef8;
+  --on-danger-solid: #fffef8;
+
+  --border-success-toned: #5eead4;
+  --text-success-prominent: #115e59;
+  --success-soft-10: rgba(13, 148, 136, 0.12);
+  --success-soft-12: rgba(13, 148, 136, 0.15);
+  --success-soft-22: rgba(13, 148, 136, 0.24);
+  --success-border-45: rgba(13, 148, 136, 0.4);
+  --success-border-30: rgba(13, 148, 136, 0.3);
+  --success-border-10: rgba(13, 148, 136, 0.11);
+  --text-on-success-soft: #134e4a;
+  --text-on-success-soft-hover: #0f3d3a;
+
+  --accent-soft-12: rgba(139, 105, 20, 0.12);
+  --accent-soft-15: rgba(139, 105, 20, 0.16);
+  --accent-soft-28: rgba(139, 105, 20, 0.24);
+  --accent-border-30: rgba(139, 105, 20, 0.32);
+  --accent-border-40: rgba(139, 105, 20, 0.42);
+  --focus-ring-accent: rgba(166, 124, 0, 0.35);
+
+  --danger-soft-10: rgba(185, 28, 28, 0.1);
+  --danger-border-45: rgba(185, 28, 28, 0.38);
+  --danger-text-muted: #b91c1c;
+  --danger-text-muted-hover: #991b1b;
+
+  --overlay-scrim-82: rgba(44, 36, 24, 0.55);
+  --overlay-scrim-70: rgba(44, 36, 24, 0.4);
+  --overlay-scrim-20: rgba(44, 36, 24, 0.08);
+  --shadow-elevated: 0 8px 40px rgba(60, 48, 30, 0.18);
+  --shadow-elevated-soft: 0 4px 20px rgba(60, 48, 30, 0.14);
+  --shadow-drag: 0 4px 16px rgba(60, 48, 30, 0.2);
+
+  --grad-drive-a: #3a7ab0;
+  --grad-drive-b: #2a5f8f;
+  --grad-drive-hover-a: #4a8cc8;
+  --grad-drive-hover-b: #3570a0;
+  --grad-push-a: #b45309;
+  --grad-push-b: #8f3d06;
+  --grad-push-hover-a: #c96a12;
+  --grad-push-hover-b: #a34a08;
+
+  --col-blue-soft: rgba(139, 105, 20, 0.08);
+  --col-blue-border: rgba(139, 105, 20, 0.28);
+  --col-emerald-soft: rgba(13, 148, 136, 0.09);
+  --col-emerald-border: rgba(45, 212, 191, 0.32);
+  --table-subheader-text: #6b5c48;
+  --col-year-text: #6b5c48;
+  --col-blue-faded: rgba(139, 105, 20, 0.04);
+  --col-emerald-faded: rgba(13, 148, 136, 0.04);
+  --group-start-bg: rgba(139, 105, 20, 0.14);
+  --group-start-text: #7c5a0a;
+  --group-end-bg: rgba(13, 148, 136, 0.12);
+  --group-end-text: #0f766e;
+
+  --memo-empty: #7a6a58;
+  --border-icon-btn: var(--border);
+  --btn-icon-fg: #2a2218;
+
+  --red-hover-solid: #dc2626;
+  --key-hint-sep: #8a7a68;
+
+  --timeline-drop-dashed: rgba(139, 105, 20, 0.3);
+  --timeline-today-bg: #faf0dd;
+  --timeline-weekend: #0e7490;
+  --timeline-grid-even: rgba(44, 36, 24, 0.028);
+  --timeline-grid-odd: rgba(44, 36, 24, 0.055);
+  --timeline-block-a: #92400e;
+  --timeline-block-b: #ca8a04;
+  --timeline-block-sel-a: #b45309;
+  --timeline-block-sel-b: #eab308;
+  --timeline-block-sel-border: #fde68a;
+  --timeline-block-sel-glow: 0 0 0 2px rgba(234, 179, 8, 0.45), 0 2px 14px rgba(180, 83, 9, 0.35);
+  --timeline-handle-hover: rgba(255, 255, 255, 0.4);
+  --timeline-block-text: rgba(255, 255, 255, 0.95);
+  --warning-amber: #b45309;
+
+  --btn-archive-border: #ca8a04;
+  --btn-archive-text: #92400e;
+
+  --restore-compare-list-bg: rgba(139, 105, 20, 0.14);
+  --restore-compare-list-text: #7c5a0a;
+  --restore-compare-arch-bg: rgba(13, 148, 136, 0.12);
+  --restore-compare-arch-text: #0f766e;
+  --on-strong-green-btn: #fffef8;
+  --green-hover-solid: #14b8a6;
+
+  --scrollbar-thumb-hover: #a89078;
+}
+
+[data-theme="babyblue"] {
+  color-scheme: light;
+
+  --bg: #eef6fc;
+  --bg2: #ffffff;
+  --bg3: #e6f2fa;
+  --border: #a8c8df;
+  --accent: #1d6b9e;
+  --accent2: #0b7ead;
+  --text: #123244;
+  --text2: #3d5f78;
+  --red: #c02626;
+  /* 青の分割補色：ライム〜黄緑で「爽やかな成功」（青と離して遊ぶ） */
+  --green: #4d7c0f;
+  --shadow: 0 2px 14px rgba(20, 50, 80, 0.08);
+
+  --on-primary: #f0f9ff;
+  --on-danger-solid: #ffffff;
+
+  --border-success-toned: #d9f99d;
+  --text-success-prominent: #3f6212;
+  --success-soft-10: rgba(101, 163, 13, 0.12);
+  --success-soft-12: rgba(101, 163, 13, 0.14);
+  --success-soft-22: rgba(101, 163, 13, 0.22);
+  --success-border-45: rgba(101, 163, 13, 0.42);
+  --success-border-30: rgba(101, 163, 13, 0.3);
+  --success-border-10: rgba(101, 163, 13, 0.11);
+  --text-on-success-soft: #3f6212;
+  --text-on-success-soft-hover: #365314;
+
+  --accent-soft-12: rgba(29, 107, 158, 0.11);
+  --accent-soft-15: rgba(29, 107, 158, 0.15);
+  --accent-soft-28: rgba(29, 107, 158, 0.22);
+  --accent-border-30: rgba(29, 107, 158, 0.28);
+  --accent-border-40: rgba(29, 107, 158, 0.38);
+  --focus-ring-accent: rgba(11, 126, 173, 0.35);
+
+  --danger-soft-10: rgba(192, 38, 38, 0.1);
+  --danger-border-45: rgba(192, 38, 38, 0.38);
+  --danger-text-muted: #b91c1c;
+  --danger-text-muted-hover: #991b1b;
+
+  --overlay-scrim-82: rgba(18, 50, 68, 0.52);
+  --overlay-scrim-70: rgba(18, 50, 68, 0.38);
+  --overlay-scrim-20: rgba(18, 50, 68, 0.07);
+  --shadow-elevated: 0 8px 40px rgba(20, 50, 80, 0.16);
+  --shadow-elevated-soft: 0 4px 20px rgba(20, 50, 80, 0.12);
+  --shadow-drag: 0 4px 16px rgba(20, 50, 80, 0.18);
+
+  --grad-drive-a: #3a7ab0;
+  --grad-drive-b: #2a5f8f;
+  --grad-drive-hover-a: #4a8cc8;
+  --grad-drive-hover-b: #3570a0;
+  --grad-push-a: #c2410c;
+  --grad-push-b: #9a3412;
+  --grad-push-hover-a: #ea580c;
+  --grad-push-hover-b: #c2410c;
+
+  --col-blue-soft: rgba(29, 107, 158, 0.1);
+  --col-blue-border: rgba(29, 107, 158, 0.28);
+  --col-emerald-soft: rgba(101, 163, 13, 0.09);
+  --col-emerald-border: rgba(163, 230, 53, 0.38);
+  --table-subheader-text: #4a6a82;
+  --col-year-text: #4a6a82;
+  --col-blue-faded: rgba(29, 107, 158, 0.05);
+  --col-emerald-faded: rgba(101, 163, 13, 0.05);
+  --group-start-bg: rgba(29, 107, 158, 0.15);
+  --group-start-text: #0b4f6c;
+  --group-end-bg: rgba(101, 163, 13, 0.12);
+  --group-end-text: #3f6212;
+
+  --memo-empty: #4a6a82;
+  --border-icon-btn: var(--border);
+  --btn-icon-fg: #0c2a3d;
+
+  --red-hover-solid: #ef4444;
+  --key-hint-sep: #5c7a92;
+
+  --timeline-drop-dashed: rgba(29, 107, 158, 0.28);
+  --timeline-today-bg: #e2f3fc;
+  --timeline-weekend: #0369a1;
+  --timeline-grid-even: rgba(18, 50, 68, 0.025);
+  --timeline-grid-odd: rgba(18, 50, 68, 0.052);
+  --timeline-block-a: #0369a1;
+  --timeline-block-b: #0ea5e9;
+  --timeline-block-sel-a: #075985;
+  --timeline-block-sel-b: #38bdf8;
+  --timeline-block-sel-border: #e0f2fe;
+  --timeline-block-sel-glow: 0 0 0 2px rgba(14, 165, 233, 0.45), 0 2px 14px rgba(7, 89, 133, 0.3);
+  --timeline-handle-hover: rgba(255, 255, 255, 0.4);
+  --timeline-block-text: rgba(255, 255, 255, 0.95);
+  --warning-amber: #b45309;
+
+  --btn-archive-border: #7dd3fc;
+  --btn-archive-text: #0369a1;
+
+  --restore-compare-list-bg: rgba(29, 107, 158, 0.14);
+  --restore-compare-list-text: #0b4f6c;
+  --restore-compare-arch-bg: rgba(101, 163, 13, 0.13);
+  --restore-compare-arch-text: #3f6212;
+  --on-strong-green-btn: #ffffff;
+  --green-hover-solid: #84cc16;
+
+  --scrollbar-thumb-hover: #7aa3be;
+}
+
+[data-theme="palepink"] {
+  color-scheme: light;
+
+  --bg: #fdf8fa;
+  --bg2: #ffffff;
+  --bg3: #faf1f5;
+  --border: #ddbdd0;
+  --accent: #b3446c;
+  --accent2: #c75b82;
+  --text: #3a2430;
+  --text2: #6b4a5a;
+  --red: #be123c;
+  /* ローズの補色：エメラルド〜ミント（クラシックだがピンクとはっきり分離） */
+  --green: #059669;
+  --shadow: 0 2px 14px rgba(80, 30, 50, 0.08);
+
+  --on-primary: #fffafd;
+  --on-danger-solid: #ffffff;
+
+  --border-success-toned: #6ee7b7;
+  --text-success-prominent: #065f46;
+  --success-soft-10: rgba(5, 150, 105, 0.11);
+  --success-soft-12: rgba(5, 150, 105, 0.14);
+  --success-soft-22: rgba(5, 150, 105, 0.22);
+  --success-border-45: rgba(5, 150, 105, 0.38);
+  --success-border-30: rgba(5, 150, 105, 0.28);
+  --success-border-10: rgba(5, 150, 105, 0.1);
+  --text-on-success-soft: #065f46;
+  --text-on-success-soft-hover: #064e3b;
+
+  --accent-soft-12: rgba(179, 68, 108, 0.1);
+  --accent-soft-15: rgba(179, 68, 108, 0.14);
+  --accent-soft-28: rgba(179, 68, 108, 0.22);
+  --accent-border-30: rgba(179, 68, 108, 0.28);
+  --accent-border-40: rgba(179, 68, 108, 0.38);
+  --focus-ring-accent: rgba(199, 91, 130, 0.35);
+
+  --danger-soft-10: rgba(190, 18, 60, 0.1);
+  --danger-border-45: rgba(190, 18, 60, 0.38);
+  --danger-text-muted: #be123c;
+  --danger-text-muted-hover: #9f1239;
+
+  --overlay-scrim-82: rgba(58, 36, 48, 0.52);
+  --overlay-scrim-70: rgba(58, 36, 48, 0.38);
+  --overlay-scrim-20: rgba(58, 36, 48, 0.07);
+  --shadow-elevated: 0 8px 40px rgba(80, 30, 50, 0.16);
+  --shadow-elevated-soft: 0 4px 20px rgba(80, 30, 50, 0.12);
+  --shadow-drag: 0 4px 16px rgba(80, 30, 50, 0.18);
+
+  --grad-drive-a: #3a7ab0;
+  --grad-drive-b: #2a5f8f;
+  --grad-drive-hover-a: #4a8cc8;
+  --grad-drive-hover-b: #3570a0;
+  --grad-push-a: #c2410c;
+  --grad-push-b: #9a3412;
+  --grad-push-hover-a: #ea580c;
+  --grad-push-hover-b: #c2410c;
+
+  --col-blue-soft: rgba(179, 68, 108, 0.08);
+  --col-blue-border: rgba(179, 68, 108, 0.26);
+  --col-emerald-soft: rgba(5, 150, 105, 0.08);
+  --col-emerald-border: rgba(52, 211, 153, 0.32);
+  --table-subheader-text: #7d5a6a;
+  --col-year-text: #7d5a6a;
+  --col-blue-faded: rgba(179, 68, 108, 0.04);
+  --col-emerald-faded: rgba(5, 150, 105, 0.04);
+  --group-start-bg: rgba(179, 68, 108, 0.14);
+  --group-start-text: #9d174d;
+  --group-end-bg: rgba(5, 150, 105, 0.12);
+  --group-end-text: #047857;
+
+  --memo-empty: #7d5a6a;
+  --border-icon-btn: var(--border);
+  --btn-icon-fg: #3a2430;
+
+  --red-hover-solid: #f43f5e;
+  --key-hint-sep: #9a7584;
+
+  --timeline-drop-dashed: rgba(179, 68, 108, 0.28);
+  --timeline-today-bg: #fdf2f8;
+  --timeline-weekend: #0e7490;
+  --timeline-grid-even: rgba(58, 36, 48, 0.026);
+  --timeline-grid-odd: rgba(58, 36, 48, 0.052);
+  --timeline-block-a: #9d174d;
+  --timeline-block-b: #e879a9;
+  --timeline-block-sel-a: #831843;
+  --timeline-block-sel-b: #f472b6;
+  --timeline-block-sel-border: #fce7f3;
+  --timeline-block-sel-glow: 0 0 0 2px rgba(244, 114, 182, 0.45), 0 2px 14px rgba(131, 24, 67, 0.3);
+  --timeline-handle-hover: rgba(255, 255, 255, 0.45);
+  --timeline-block-text: rgba(255, 255, 255, 0.95);
+  --warning-amber: #b45309;
+
+  --btn-archive-border: #f9a8d4;
+  --btn-archive-text: #9d174d;
+
+  --restore-compare-list-bg: rgba(179, 68, 108, 0.14);
+  --restore-compare-list-text: #9d174d;
+  --restore-compare-arch-bg: rgba(5, 150, 105, 0.12);
+  --restore-compare-arch-text: #047857;
+  --on-strong-green-btn: #ffffff;
+  --green-hover-solid: #10b981;
+
+  --scrollbar-thumb-hover: #c4a4b2;
+}
