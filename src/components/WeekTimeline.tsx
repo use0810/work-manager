@@ -14,8 +14,8 @@ const HOUR_HEIGHT_PX = 54;
 const TOTAL_HEIGHT = TOTAL_HOURS * HOUR_HEIGHT_PX;
 /** 日列ヘッダー（`.timeline-day-header`）と同じ高さ。左時刻列の縦位置を目盛りと揃える */
 const TIMELINE_DAY_HEADER_PX = 52;
-const SNAP_MIN = 15;
-const MIN_DURATION_MIN = 15;
+const SNAP_MIN = 30;
+const MIN_DURATION_MIN = 30;
 const DRAG_THRESHOLD_PX = 6;
 /** グリッド左右この幅にドロップすると ±1 週間シフト */
 const WEEK_DROP_ZONE_PX = 48;
@@ -117,7 +117,7 @@ function snapMinutes(m: number): number {
 function snapEndMinutes(m: number): number {
   const maxEnd = 24 * 60;
   const clamped = Math.max(0, Math.min(maxEnd, m));
-  // 最終 15 分刻みの上半分は 24:00 に寄せる（丸めで 23:45 に張り付きやすいのを防ぐ）
+  // 最終刻みの上半分は 24:00 に寄せる（丸めで 23:30 に張り付きやすいのを防ぐ）
   if (clamped > maxEnd - SNAP_MIN / 2) return maxEnd;
   return Math.round(clamped / SNAP_MIN) * SNAP_MIN;
 }
@@ -129,7 +129,7 @@ function dayKeyToMidnight(dayKey: string): Date {
 
 function clampRangeOnDay(dayKey: string, startMin: number, endMin: number): { startAt: string; endAt: string } {
   const day0 = dayKeyToMidnight(dayKey);
-  /** 当日 24:00＝翌日 0:00。15 分刻みで endMin=1440 まで許可 */
+  /** 当日 24:00＝翌日 0:00。30 分刻みで endMin=1440 まで許可 */
   const dayAt24 = addMinutes(day0, 24 * 60);
   let start = addMinutes(day0, startMin);
   let end = addMinutes(day0, endMin);

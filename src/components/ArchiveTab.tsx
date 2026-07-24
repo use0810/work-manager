@@ -135,59 +135,37 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
                     title="日時一覧に復元"
                     onClick={e => { e.stopPropagation(); handleRestoreClick(archive); }}
                   >
-                    ↩️ 復元
+                    復元
                   </button>
                   <button
                     className="btn-delete"
                     title="このアーカイブを削除"
                     onClick={e => { e.stopPropagation(); setDeleteTarget(archive); }}
-                  >✕</button>
+                  >
+                    削除
+                  </button>
                   <span className="accordion__chevron">{isOpen ? '▲' : '▼'}</span>
                 </button>
 
                 {isOpen && (
                   <div className="accordion__body">
-                    <table className="record-table">
+                    <table className="record-table record-table--compact">
                       <thead>
                         <tr>
-                          <th colSpan={5} className="group-start">開始</th>
-                          <th colSpan={5} className="group-end">終了</th>
+                          <th className="group-start">開始</th>
+                          <th className="group-end">終了</th>
                           <th>メモ</th>
-                        </tr>
-                        <tr className="record-table__sub-header">
-                          {['年','月','日','時','分'].map((l, i) => (
-                            <th key={'s'+l} className={`col-start${i === 0 ? ' col-year' : ''}`}>{l}</th>
-                          ))}
-                          {['年','月','日','時','分'].map((l, i) => (
-                            <th
-                              key={'e'+l}
-                              className={`${i === 4 ? 'col-end col-end-last' : 'col-end'}${i === 0 ? ' col-year' : ''}`}
-                            >
-                              {l}
-                            </th>
-                          ))}
-                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
                         {archive.records.map(rec => (
                           <tr key={rec.id}>
-                            {(['yyyy','MM','dd','HH','mm'] as const).map((fmt, i) => (
-                              <td
-                                key={'s'+fmt}
-                                className={`${i === 4 ? 'col-start col-start-last' : 'col-start'}${i === 0 ? ' col-year' : ''}`}
-                              >
-                                {format(parseISO(rec.startAt), fmt)}
-                              </td>
-                            ))}
-                            {(['yyyy','MM','dd','HH','mm'] as const).map((fmt, i) => (
-                              <td
-                                key={'e'+fmt}
-                                className={`${i === 4 ? 'col-end col-end-last' : 'col-end'}${i === 0 ? ' col-year' : ''}`}
-                              >
-                                {format(parseISO(rec.endAt), fmt)}
-                              </td>
-                            ))}
+                            <td className="col-start col-start-last">
+                              {format(parseISO(rec.startAt), 'yyyy/MM/dd HH:mm')}
+                            </td>
+                            <td className="col-end col-end-last">
+                              {format(parseISO(rec.endAt), 'yyyy/MM/dd HH:mm')}
+                            </td>
                             <td
                               className="memo-cell"
                               style={{ cursor: rec.memo ? 'pointer' : 'default' }}
@@ -195,8 +173,8 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
                               title={rec.memo ? 'クリックで詳細' : ''}
                             >
                               {rec.memo
-                                ? <span className="memo-badge">📝</span>
-                                : <span className="memo-empty">—</span>}
+                                ? <span className="memo-badge">メモ</span>
+                                : <span className="memo-empty">なし</span>}
                             </td>
                           </tr>
                         ))}

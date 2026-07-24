@@ -80,25 +80,34 @@ export default function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>仕事記録</h1>
-        <nav className="tab-nav">
+        <div className="app-header__brand">
+          <h1>仕事記録</h1>
+          <p className="app-header__tagline">勤務・作業の日時メモ</p>
+        </div>
+        <nav className="tab-nav" aria-label="メイン">
           <button
+            type="button"
             className={`tab-btn ${tab === 'list' ? 'tab-btn--active' : ''}`}
             onClick={() => setTab('list')}
           >
-            📋 日時一覧
+            <span className="tab-btn__full">日時一覧</span>
+            <span className="tab-btn__short">一覧</span>
           </button>
           <button
+            type="button"
             className={`tab-btn ${tab === 'timeline' ? 'tab-btn--active' : ''}`}
             onClick={() => setTab('timeline')}
           >
-            📊 週間タイムライン
+            <span className="tab-btn__full">週間タイムライン</span>
+            <span className="tab-btn__short">週</span>
           </button>
           <button
+            type="button"
             className={`tab-btn ${tab === 'archive' ? 'tab-btn--active' : ''}`}
             onClick={() => setTab('archive')}
           >
-            📦 アーカイブ
+            <span className="tab-btn__full">アーカイブ</span>
+            <span className="tab-btn__short">保管</span>
           </button>
         </nav>
         <div className="app-header-actions">
@@ -111,7 +120,7 @@ export default function App() {
               aria-haspopup="true"
               title="カラー・ヘルプ・データ初期化"
             >
-              ⚙ 設定
+              設定
             </button>
             {settingsOpen ? (
               <div className="app-settings-dropdown" role="region" aria-label="設定">
@@ -162,7 +171,8 @@ export default function App() {
             onClick={() => setCsvOpen(true)}
             title="記録を CSV ファイルに書き出し / 取り込み"
           >
-            📁 CSV 入出力
+            <span className="tab-btn__full">CSV 入出力</span>
+            <span className="tab-btn__short">CSV</span>
           </button>
         </div>
       </header>

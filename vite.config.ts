@@ -74,6 +74,10 @@ export default defineConfig(({ mode, command }) => {
         globPatterns: ['**/*.{js,css,html,ico,svg,png,woff2}'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//],
+        // 旧バージョンの SW が残した古い precache を新 SW のアクティベート時に削除。
+        // 過去に壊れた index.html（/src/main.tsx を直接読む dev 版など）が
+        // ブラウザに居座って 404 を出し続けるのを防ぐ。
+        cleanupOutdatedCaches: true,
       },
       devOptions: {
         enabled: false,
