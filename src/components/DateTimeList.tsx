@@ -1,6 +1,10 @@
 import { useState, useMemo, useRef } from 'react';
-import type { WorkRecord } from '../types';
-import { groupByYearMonth, totalWorkMinutes, formatHoursMinutes } from '../utils/dateUtils';
+import type { CategoryDefinition, WorkRecord } from '../types';
+import {
+  groupByYearMonth,
+  totalWorkMinutes,
+  formatHoursMinutes,
+} from '../utils/dateUtils';
 import {
   addRecord, updateRecord, deleteRecord, saveRecords,
   findArchivesByMonth, archiveAsNew, archiveMergeLatest,
@@ -16,6 +20,8 @@ interface Props {
   records: WorkRecord[];
   onRecordsChange: (records: WorkRecord[]) => void;
   onArchived: () => void;
+  categoryDefinitions: CategoryDefinition[];
+  onCategoryDefinitionsChange: (next: CategoryDefinition[]) => void;
 }
 
 interface ArchivePending {
@@ -23,7 +29,13 @@ interface ArchivePending {
   records: WorkRecord[];
 }
 
-export default function DateTimeList({ records, onRecordsChange, onArchived }: Props) {
+export default function DateTimeList({
+  records,
+  onRecordsChange,
+  onArchived,
+  categoryDefinitions,
+  onCategoryDefinitionsChange,
+}: Props) {
   const [openMonths, setOpenMonths] = useState<Set<string>>(new Set());
   const [memoModalRecord, setMemoModalRecord] = useState<WorkRecord | null>(null);
   const [pages, setPages] = useState<Record<string, number>>({});
@@ -94,7 +106,12 @@ export default function DateTimeList({ records, onRecordsChange, onArchived }: P
 
   return (
     <div className="datetime-list">
-      <AddRecordForm ref={formRef} onAdd={handleAdd} />
+      <AddRecordForm
+        ref={formRef}
+        onAdd={handleAdd}
+        categoryDefinitions={categoryDefinitions}
+        onCategoryDefinitionsChange={onCategoryDefinitionsChange}
+      />
 
       {archivedBanner && (
         <div className="archive-banner">
@@ -167,9 +184,13 @@ export default function DateTimeList({ records, onRecordsChange, onArchived }: P
       {memoModalRecord !== null && (
         <MemoModal
           memo={memoModalRecord.memo}
+          category={memoModalRecord.category}
+          categoryOption={memoModalRecord.categoryOption}
+          categoryDefinitions={categoryDefinitions}
+          onCategoryDefinitionsChange={onCategoryDefinitionsChange}
           editable
-          onSave={nextMemo => {
-            handleUpdate({ ...memoModalRecord, memo: nextMemo });
+          onSave={({ memo, category, categoryOption }) => {
+            handleUpdate({ ...memoModalRecord, memo, category, categoryOption });
           }}
           onClose={() => setMemoModalRecord(null)}
         />

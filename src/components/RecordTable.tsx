@@ -8,7 +8,7 @@ import {
   formatRecordDateTime,
   isoToDatetimeLocal,
 } from '../utils/datetimeLocal';
-import { formatHoursMinutes } from '../utils/dateUtils';
+import { formatHoursMinutes, formatCategoryLabel } from '../utils/dateUtils';
 
 interface Props {
   records: WorkRecord[];
@@ -116,6 +116,7 @@ export default function RecordTable({ records, onUpdate, onDelete, onCopy, onMem
             <th className="group-start">開始</th>
             <th className="group-end">終了</th>
             <th>時間</th>
+            <th>カテゴリ</th>
             <th>メモ</th>
             <th></th>
           </tr>
@@ -129,13 +130,31 @@ export default function RecordTable({ records, onUpdate, onDelete, onCopy, onMem
               <td className="duration-cell">{durationLabel(rec.startAt, rec.endAt)}</td>
 
               <td
+                className="category-cell editable-cell"
+                onClick={e => {
+                  e.stopPropagation();
+                  commitEdit();
+                  onMemoOpen(rec);
+                }}
+                title="クリックでカテゴリ・メモを編集"
+              >
+                {rec.category?.trim() || rec.categoryOption?.trim() ? (
+                  <span className="category-badge">
+                    {formatCategoryLabel(rec.category, rec.categoryOption)}
+                  </span>
+                ) : (
+                  <span className="memo-empty">未分類</span>
+                )}
+              </td>
+
+              <td
                 className="memo-cell editable-cell"
                 onClick={e => {
                   e.stopPropagation();
                   commitEdit();
                   onMemoOpen(rec);
                 }}
-                title="クリックでメモを編集"
+                title="クリックでカテゴリ・メモを編集"
               >
                 {rec.memo ? <span className="memo-badge">メモ</span> : <span className="memo-empty">なし</span>}
               </td>

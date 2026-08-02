@@ -1,8 +1,9 @@
 import { useState, useLayoutEffect, useEffect, useRef } from 'react';
-import type { WorkRecord } from './types';
+import type { CategoryDefinition, WorkRecord } from './types';
 import { loadRecords, saveRecords } from './utils/storage';
 import { hasAcceptedGuideAndTerms } from './utils/onboardingStorage';
 import { resetAllBrowserStoredAppData } from './utils/resetBrowserAppData';
+import { loadCategoryDefinitions } from './utils/categoryDefsStorage';
 import {
   applyDocumentTheme,
   APP_THEME_OPTIONS,
@@ -12,20 +13,26 @@ import {
 } from './utils/themeStorage';
 import DateTimeList from './components/DateTimeList';
 import WeekTimeline from './components/WeekTimeline';
+import SummaryTab from './components/SummaryTab';
 import ArchiveTab from './components/ArchiveTab';
 import CsvSyncModal from './components/CsvSyncModal';
 import GuideTermsWizard from './components/GuideTermsWizard';
 import DataResetConfirmModal from './components/DataResetConfirmModal';
+import CategoryManagerModal from './components/CategoryManagerModal';
 import './App.css';
 
-type Tab = 'list' | 'timeline' | 'archive';
+type Tab = 'list' | 'timeline' | 'summary' | 'archive';
 
 export default function App() {
   const [records, setRecords] = useState<WorkRecord[]>(loadRecords);
+  const [categoryDefinitions, setCategoryDefinitions] = useState<CategoryDefinition[]>(
+    () => loadCategoryDefinitions()
+  );
   const [archiveRefresh, setArchiveRefresh] = useState(0);
   const [guideOpen, setGuideOpen] = useState(!hasAcceptedGuideAndTerms());
   const [helpOpen, setHelpOpen] = useState(false);
   const [dataResetOpen, setDataResetOpen] = useState(false);
+  const [categoryManagerOpen, setCategoryManagerOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('list');
@@ -103,6 +110,14 @@ export default function App() {
           </button>
           <button
             type="button"
+            className={`tab-btn ${tab === 'summary' ? 'tab-btn--active' : ''}`}
+            onClick={() => setTab('summary')}
+          >
+            <span className="tab-btn__full">集計表</span>
+            <span className="tab-btn__short">集計</span>
+          </button>
+          <button
+            type="button"
             className={`tab-btn ${tab === 'archive' ? 'tab-btn--active' : ''}`}
             onClick={() => setTab('archive')}
           >
@@ -144,6 +159,16 @@ export default function App() {
                 <hr className="app-settings-divider" />
                 <button
                   type="button"
+                  className="app-settings-action"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setCategoryManagerOpen(true);
+                  }}
+                >
+                  カテゴリ管理
+                </button>
+                <button
+                  type="button"
                   className="app-settings-action app-settings-action--danger"
                   onClick={() => {
                     setSettingsOpen(false);
@@ -183,10 +208,20 @@ export default function App() {
             records={records}
             onRecordsChange={applyRecords}
             onArchived={() => setArchiveRefresh(n => n + 1)}
+            categoryDefinitions={categoryDefinitions}
+            onCategoryDefinitionsChange={setCategoryDefinitions}
           />
         )}
         {tab === 'timeline' && (
-          <WeekTimeline records={records} onRecordsChange={applyRecords} />
+          <WeekTimeline
+            records={records}
+            onRecordsChange={applyRecords}
+            categoryDefinitions={categoryDefinitions}
+            onCategoryDefinitionsChange={setCategoryDefinitions}
+          />
+        )}
+        {tab === 'summary' && (
+          <SummaryTab records={records} refreshKey={archiveRefresh} />
         )}
         {tab === 'archive' && (
           <ArchiveTab
@@ -203,6 +238,14 @@ export default function App() {
         records={records}
         onRecordsChange={applyRecords}
       />
+
+      {categoryManagerOpen && (
+        <CategoryManagerModal
+          definitions={categoryDefinitions}
+          onChange={setCategoryDefinitions}
+          onClose={() => setCategoryManagerOpen(false)}
+        />
+      )}
 
       <GuideTermsWizard
         open={guideOpen}

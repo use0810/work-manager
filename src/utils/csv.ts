@@ -7,7 +7,7 @@ import { parseWorkRecordsArray } from './recordValidation';
  * - RFC 4180 風: カンマ・改行・ダブルクオートを含むセルは "..." で囲み、" は "" にエスケープ
  */
 
-const CSV_HEADERS = ['id', 'startAt', 'endAt', 'memo'] as const;
+const CSV_HEADERS = ['id', 'startAt', 'endAt', 'category', 'categoryOption', 'memo'] as const;
 const UTF8_BOM = '\uFEFF';
 
 function escapeCell(value: string): string {
@@ -24,7 +24,9 @@ export function recordsToCsv(records: WorkRecord[]): string {
   lines.push(CSV_HEADERS.join(','));
   for (const r of records) {
     lines.push(
-      [r.id, r.startAt, r.endAt, r.memo].map(v => escapeCell(String(v ?? ''))).join(',')
+      [r.id, r.startAt, r.endAt, r.category ?? '', r.categoryOption ?? '', r.memo]
+        .map(v => escapeCell(String(v ?? '')))
+        .join(',')
     );
   }
   return UTF8_BOM + lines.join('\r\n') + '\r\n';
@@ -104,7 +106,7 @@ export interface CsvImportResult {
 
 /**
  * CSV テキストを WorkRecord[] に変換。
- * 列は id,startAt,endAt,memo を想定。順番違いはヘッダから判定する。
+ * 列は id,startAt,endAt,category,categoryOption,memo を想定（旧形式も可）。
  */
 export function csvToRecords(text: string): CsvImportResult {
   const rows = parseCsv(text).filter(r => r.length > 0 && r.some(c => c !== ''));
@@ -113,12 +115,14 @@ export function csvToRecords(text: string): CsvImportResult {
   }
 
   const headerCells = rows[0].map(c => c.trim().toLowerCase());
-  const expected = CSV_HEADERS.map(h => h.toLowerCase());
-  const hasHeader = expected.every(h => headerCells.includes(h));
+  const required = ['id', 'startat', 'endat', 'memo'];
+  const hasHeader = required.every(h => headerCells.includes(h));
 
   let idIdx = 0;
   let startIdx = 1;
   let endIdx = 2;
+  let categoryIdx = -1;
+  let optionIdx = -1;
   let memoIdx = 3;
   let dataRows: string[][];
 
@@ -126,16 +130,34 @@ export function csvToRecords(text: string): CsvImportResult {
     idIdx = headerCells.indexOf('id');
     startIdx = headerCells.indexOf('startat');
     endIdx = headerCells.indexOf('endat');
+    categoryIdx = headerCells.indexOf('category');
+    optionIdx = headerCells.indexOf('categoryoption');
     memoIdx = headerCells.indexOf('memo');
     dataRows = rows.slice(1);
   } else {
     dataRows = rows;
+    const sample = dataRows[0] ?? [];
+    if (sample.length >= 6) {
+      categoryIdx = 3;
+      optionIdx = 4;
+      memoIdx = 5;
+    } else if (sample.length >= 5) {
+      categoryIdx = 3;
+      optionIdx = -1;
+      memoIdx = 4;
+    } else {
+      categoryIdx = -1;
+      optionIdx = -1;
+      memoIdx = 3;
+    }
   }
 
   const raw = dataRows.map(cells => ({
     id: cells[idIdx] ?? '',
     startAt: cells[startIdx] ?? '',
     endAt: cells[endIdx] ?? '',
+    category: categoryIdx >= 0 ? (cells[categoryIdx] ?? '') : '',
+    categoryOption: optionIdx >= 0 ? (cells[optionIdx] ?? '') : '',
     memo: cells[memoIdx] ?? '',
   }));
   const records = parseWorkRecordsArray(raw);

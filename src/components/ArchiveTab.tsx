@@ -25,7 +25,7 @@ function archiveLabel(a: ArchivedMonth) {
 export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Props) {
   const [archives, setArchives] = useState<ArchivedMonth[]>(() => loadArchives());
   const [openIds, setOpenIds] = useState<Set<string>>(new Set());
-  const [memoModal, setMemoModal] = useState<string | null>(null);
+  const [memoModal, setMemoModal] = useState<WorkRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ArchivedMonth | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<ArchivedMonth | null>(null);
   const [restoredBanner, setRestoredBanner] = useState<string | null>(null);
@@ -92,6 +92,8 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
       id: a.id,
       startAt: a.archivedAt,
       endAt: a.archivedAt,
+      category: '',
+      categoryOption: '',
       memo: `${archiveLabel(a)}（${a.records.length}件 / ${totalTime(a.records)}）`,
     };
   }
@@ -154,6 +156,7 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
                         <tr>
                           <th className="group-start">開始</th>
                           <th className="group-end">終了</th>
+                          <th>カテゴリ</th>
                           <th>メモ</th>
                         </tr>
                       </thead>
@@ -166,11 +169,16 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
                             <td className="col-end col-end-last">
                               {format(parseISO(rec.endAt), 'yyyy/MM/dd HH:mm')}
                             </td>
+                            <td>
+                              {rec.category?.trim() || rec.categoryOption?.trim()
+                                ? <span className="category-badge">{[rec.category, rec.categoryOption].filter(Boolean).join(' / ')}</span>
+                                : <span className="memo-empty">未分類</span>}
+                            </td>
                             <td
                               className="memo-cell"
-                              style={{ cursor: rec.memo ? 'pointer' : 'default' }}
-                              onClick={() => rec.memo && setMemoModal(rec.memo)}
-                              title={rec.memo ? 'クリックで詳細' : ''}
+                              style={{ cursor: rec.memo || rec.category || rec.categoryOption ? 'pointer' : 'default' }}
+                              onClick={() => (rec.memo || rec.category || rec.categoryOption) && setMemoModal(rec)}
+                              title={rec.memo || rec.category || rec.categoryOption ? 'クリックで詳細' : ''}
                             >
                               {rec.memo
                                 ? <span className="memo-badge">メモ</span>
@@ -189,7 +197,14 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
       ))}
 
       {memoModal !== null && (
-        <MemoModal memo={memoModal} onClose={() => setMemoModal(null)} />
+        <MemoModal
+          memo={memoModal.memo}
+          category={memoModal.category}
+          categoryOption={memoModal.categoryOption}
+          categoryDefinitions={[]}
+          onCategoryDefinitionsChange={() => {}}
+          onClose={() => setMemoModal(null)}
+        />
       )}
 
       {deleteTarget && (

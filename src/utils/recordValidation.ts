@@ -2,6 +2,8 @@ import type { ArchivedMonth, WorkRecord } from '../types';
 
 /** メモ・シートセルの上限（DoS / localStorage 肥大化の緩和） */
 export const MAX_MEMO_CHARS = 8_000;
+/** 種別の上限 */
+export const MAX_CATEGORY_CHARS = 64;
 /** 1 レコードあたりの id 上限 */
 export const MAX_ID_CHARS = 128;
 /** ブラウザ保存・シート取り込みの最大件数 */
@@ -45,6 +47,12 @@ export function truncateMemo(memo: string): string {
   return memo.slice(0, MAX_MEMO_CHARS);
 }
 
+export function truncateCategory(category: string): string {
+  const t = category.trim();
+  if (t.length <= MAX_CATEGORY_CHARS) return t;
+  return t.slice(0, MAX_CATEGORY_CHARS);
+}
+
 /** 1 件を検証。不正なら null（破棄）。memo は長すぎる場合のみ切り詰め */
 export function parseWorkRecord(raw: unknown): WorkRecord | null {
   if (raw === null || typeof raw !== 'object') return null;
@@ -58,7 +66,28 @@ export function parseWorkRecord(raw: unknown): WorkRecord | null {
   const memoRaw = o.memo;
   const memo =
     typeof memoRaw === 'string' ? truncateMemo(memoRaw) : memoRaw == null ? '' : truncateMemo(String(memoRaw));
-  return { id: id.trim(), startAt: startAt.trim(), endAt: endAt.trim(), memo };
+  const categoryRaw = o.category;
+  const category =
+    typeof categoryRaw === 'string'
+      ? truncateCategory(categoryRaw)
+      : categoryRaw == null
+        ? ''
+        : truncateCategory(String(categoryRaw));
+  const optionRaw = o.categoryOption;
+  const categoryOption =
+    typeof optionRaw === 'string'
+      ? truncateCategory(optionRaw)
+      : optionRaw == null
+        ? ''
+        : truncateCategory(String(optionRaw));
+  return {
+    id: id.trim(),
+    startAt: startAt.trim(),
+    endAt: endAt.trim(),
+    category,
+    categoryOption,
+    memo,
+  };
 }
 
 /** localStorage / シート取り込みなど、配列全体を検証して正規化 */

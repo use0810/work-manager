@@ -4,9 +4,10 @@ import {
   startOfWeek, addDays, differenceInMinutes, addMinutes, startOfDay,
 } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import type { WorkRecord } from '../types';
-import { formatHoursMinutes } from '../utils/dateUtils';
+import type { CategoryDefinition, WorkRecord } from '../types';
+import { formatHoursMinutes, formatCategoryLabel } from '../utils/dateUtils';
 import { updateRecord } from '../utils/storage';
+import CategoryPicker from './CategoryPicker';
 
 const HOUR_END = 24;
 const TOTAL_HOURS = HOUR_END;
@@ -48,6 +49,8 @@ interface DragState {
 interface Props {
   records: WorkRecord[];
   onRecordsChange: (records: WorkRecord[]) => void;
+  categoryDefinitions: CategoryDefinition[];
+  onCategoryDefinitionsChange: (next: CategoryDefinition[]) => void;
 }
 
 function getWeekDays(base: Date): Date[] {
@@ -210,11 +213,21 @@ function autoScrollDuringDrag(gridEl: HTMLElement | null, clientX: number, clien
   }
 }
 
-export default function WeekTimeline({ records, onRecordsChange }: Props) {
+export default function WeekTimeline({
+  records,
+  onRecordsChange,
+  categoryDefinitions,
+  onCategoryDefinitionsChange,
+}: Props) {
   const [baseDate, setBaseDate] = useState(new Date());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ record: WorkRecord; x: number; y: number } | null>(null);
-  const [memoEdit, setMemoEdit] = useState<{ record: WorkRecord; value: string } | null>(null);
+  const [memoEdit, setMemoEdit] = useState<{
+    record: WorkRecord;
+    memo: string;
+    category: string;
+    categoryOption: string;
+  } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ id: string; startAt: string; endAt: string } | null>(null);
   const [timelineDragging, setTimelineDragging] = useState(false);
   const [weekDropHint, setWeekDropHint] = useState<'prev' | 'next' | null>(null);
@@ -493,7 +506,12 @@ export default function WeekTimeline({ records, onRecordsChange }: Props) {
 
   function handleMemoSave() {
     if (!memoEdit) return;
-    const updated: WorkRecord = { ...memoEdit.record, memo: memoEdit.value };
+    const updated: WorkRecord = {
+      ...memoEdit.record,
+      memo: memoEdit.memo,
+      category: memoEdit.category.trim(),
+      categoryOption: memoEdit.categoryOption.trim(),
+    };
     onRecordsChange(updateRecord(updated));
     setMemoEdit(null);
   }
@@ -651,7 +669,12 @@ export default function WeekTimeline({ records, onRecordsChange }: Props) {
                         e.stopPropagation();
                         setTooltip(null);
                         setSelectedId(rec.id);
-                        setMemoEdit({ record: rec, value: rec.memo });
+                        setMemoEdit({
+                          record: rec,
+                          memo: rec.memo,
+                          category: rec.category ?? '',
+                          categoryOption: rec.categoryOption ?? '',
+                        });
                       }}
                       onMouseEnter={e => {
                         if (!isSelected && !dragPreview)
@@ -697,7 +720,7 @@ export default function WeekTimeline({ records, onRecordsChange }: Props) {
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal__header">
               <div>
-                <div style={{ fontSize: 15, fontWeight: 600 }}>メモを編集</div>
+                <div style={{ fontSize: 15, fontWeight: 600 }}>種別・メモを編集</div>
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2 }}>
                   {isSameDay(parseISO(memoEdit.record.startAt), parseISO(memoEdit.record.endAt)) ? (
                     <>
@@ -725,17 +748,31 @@ export default function WeekTimeline({ records, onRecordsChange }: Props) {
               </button>
             </div>
             <div className="modal__body">
-              <textarea
-                className="memo-edit-textarea"
-                value={memoEdit.value}
-                onChange={e => setMemoEdit(m => (m ? { ...m, value: e.target.value } : null))}
-                placeholder="メモを入力..."
-                autoFocus
-                onKeyDown={e => {
-                  if (e.key === 'Escape') setMemoEdit(null);
-                  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleMemoSave();
-                }}
+              <CategoryPicker
+                category={memoEdit.category}
+                categoryOption={memoEdit.categoryOption}
+                definitions={categoryDefinitions}
+                onDefinitionsChange={onCategoryDefinitionsChange}
+                onChange={({ category, categoryOption }) =>
+                  setMemoEdit(m => (m ? { ...m, category, categoryOption } : null))
+                }
+                idPrefix="timeline"
+                compact
               />
+              <label className="memo-modal-field">
+                <span>メモ</span>
+                <textarea
+                  className="memo-edit-textarea"
+                  value={memoEdit.memo}
+                  onChange={e => setMemoEdit(m => (m ? { ...m, memo: e.target.value } : null))}
+                  placeholder="メモを入力..."
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') setMemoEdit(null);
+                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) handleMemoSave();
+                  }}
+                />
+              </label>
               <p className="memo-edit-hint">Ctrl+Enter で保存 / Esc でキャンセル</p>
             </div>
             <div className="delete-modal__footer">
@@ -774,6 +811,11 @@ export default function WeekTimeline({ records, onRecordsChange }: Props) {
           {!overnight && (
             <div>
               {format(s, 'HH:mm', { locale: ja })} 〜 {format(e, 'HH:mm', { locale: ja })}
+            </div>
+          )}
+          {(tooltip.record.category?.trim() || tooltip.record.categoryOption?.trim()) && (
+            <div className="tooltip-category">
+              {formatCategoryLabel(tooltip.record.category, tooltip.record.categoryOption)}
             </div>
           )}
           {tooltip.record.memo && <div className="tooltip-memo">{tooltip.record.memo}</div>}

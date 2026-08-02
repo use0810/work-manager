@@ -37,6 +37,14 @@ export default function DeleteConfirmModal({ record, onConfirm, onCancel }: Prop
               <span className="delete-modal__label">終了</span>
               <span className="delete-modal__value">{end}</span>
             </div>
+            {(record.category?.trim() || record.categoryOption?.trim()) && (
+              <div className="delete-modal__row">
+                <span className="delete-modal__label">カテゴリ</span>
+                <span className="delete-modal__value">
+                  {[record.category, record.categoryOption].filter(s => s?.trim()).join(' / ')}
+                </span>
+              </div>
+            )}
             {record.memo && (
               <div className="delete-modal__row">
                 <span className="delete-modal__label">メモ</span>

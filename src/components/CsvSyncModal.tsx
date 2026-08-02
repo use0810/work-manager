@@ -70,7 +70,7 @@ export default function CsvSyncModal({ open, onClose, records, onRecordsChange }
       if (result.records.length === 0) {
         setBanner({
           kind: 'error',
-          text: `${result.totalRows} 行ありましたが、形式が合わずすべて読み取れませんでした。ヘッダ「id,startAt,endAt,memo」を確認してください。`,
+          text: `${result.totalRows} 行ありましたが、形式が合わずすべて読み取れませんでした。ヘッダ「id,startAt,endAt,category,categoryOption,memo」を確認してください。`,
         });
         return;
       }
@@ -152,7 +152,7 @@ export default function CsvSyncModal({ open, onClose, records, onRecordsChange }
               <section className="csv-section">
                 <h3 className="csv-section-title">取り込み（インポート）</h3>
                 <p className="csv-section-desc">
-                  以前書き出した CSV、または同じ列構成（id, startAt, endAt, memo）の CSV を読み込めます。
+                  以前書き出した CSV、または同じ列構成（id, startAt, endAt, category, categoryOption, memo）の CSV を読み込めます。旧形式も取り込み可能です。
                 </p>
                 <button type="button" className="btn-nav csv-action-btn" onClick={openFilePicker}>
                   CSV ファイルを選択…
