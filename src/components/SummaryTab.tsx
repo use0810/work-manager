@@ -26,8 +26,6 @@ function formatCellMinutes(mins: number): string {
   if (mins <= 0) return '—';
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  if (h === 0) return `${m}分`;
-  if (m === 0) return `${h}時間`;
   return `${h}:${String(m).padStart(2, '0')}`;
 }
 
@@ -242,10 +240,10 @@ export default function SummaryTab({
               二軸集計にはカテゴリが2つ以上必要です。設定の「カテゴリ管理」で作成してください。
             </p>
           ) : (
-            <>
-              <div className="summary-axis-pickers" role="group" aria-label="集計の二軸">
+            <div className="summary-panel">
+              <div className="summary-panel__toolbar" role="group" aria-label="集計の二軸">
                 <label className="summary-axis-pickers__field">
-                  <span>行（縦軸）</span>
+                  <span>行</span>
                   <select
                     value={rowDim}
                     onChange={e => {
@@ -265,10 +263,10 @@ export default function SummaryTab({
                   </select>
                 </label>
                 <button type="button" className="btn-nav summary-axis-pickers__swap" onClick={swapAxes}>
-                  ⇄ 入替
+                  ⇄
                 </button>
                 <label className="summary-axis-pickers__field">
-                  <span>列（横軸）</span>
+                  <span>列</span>
                   <select
                     value={colDim}
                     onChange={e => {
@@ -289,70 +287,68 @@ export default function SummaryTab({
                 </label>
               </div>
 
-              <p className="summary-axis-hint">
-                {rowDim} × {colDim} をこの月全体で集計します。1件の時間は1回だけ加算します。
-              </p>
-
               {!twoAxisMatrix ? (
-                <p className="empty-state">この月の記録はありません。</p>
+                <p className="empty-state summary-panel__empty">この月の記録はありません。</p>
               ) : (
-                <section className="summary-week-card">
-                  <header className="summary-week-card__head">
-                    <h3>
+                <div className="summary-matrix-scroll">
+                  <table className="summary-matrix">
+                    <caption className="summary-matrix__caption">
                       {rowDim} × {colDim}
-                    </h3>
-                    <strong>{formatHoursMinutes(twoAxisMatrix.totalMinutes)}</strong>
-                  </header>
-                  <div className="summary-table-wrap summary-table-wrap--scroll">
-                    <table className="summary-table summary-matrix">
-                      <thead>
-                        <tr>
-                          <th className="summary-matrix__corner">
-                            {rowDim} \ {colDim}
+                      <span>{formatHoursMinutes(twoAxisMatrix.totalMinutes)}</span>
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th className="summary-matrix__corner" scope="col">
+                          {rowDim}
+                        </th>
+                        {twoAxisMatrix.colKeys.map(col => (
+                          <th key={col} scope="col">
+                            {col}
                           </th>
-                          {twoAxisMatrix.colKeys.map(col => (
-                            <th key={col}>{col}</th>
-                          ))}
-                          <th className="summary-matrix__total">計</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {twoAxisMatrix.rowKeys.map(row => (
-                          <tr key={row}>
-                            <th scope="row">{row}</th>
-                            {twoAxisMatrix.colKeys.map(col => {
-                              const mins = twoAxisCellMinutes(twoAxisMatrix, row, col);
-                              return (
-                                <td
-                                  key={col}
-                                  className={mins > 0 ? 'summary-matrix__cell' : 'summary-matrix__empty'}
-                                >
-                                  {formatCellMinutes(mins)}
-                                </td>
-                              );
-                            })}
-                            <td className="summary-matrix__total">
-                              {formatCellMinutes(twoAxisMatrix.rowTotals[row] ?? 0)}
-                            </td>
-                          </tr>
                         ))}
-                        <tr className="summary-matrix__foot">
-                          <th scope="row">計</th>
-                          {twoAxisMatrix.colKeys.map(col => (
-                            <td key={col} className="summary-matrix__total">
-                              {formatCellMinutes(twoAxisMatrix.colTotals[col] ?? 0)}
-                            </td>
-                          ))}
-                          <td className="summary-matrix__total">
-                            {formatCellMinutes(twoAxisMatrix.totalMinutes)}
+                        <th className="summary-matrix__total-col" scope="col">
+                          計
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {twoAxisMatrix.rowKeys.map(row => (
+                        <tr key={row}>
+                          <th scope="row">{row}</th>
+                          {twoAxisMatrix.colKeys.map(col => {
+                            const mins = twoAxisCellMinutes(twoAxisMatrix, row, col);
+                            return (
+                              <td
+                                key={col}
+                                className={mins > 0 ? 'summary-matrix__cell' : 'summary-matrix__empty'}
+                              >
+                                {formatCellMinutes(mins)}
+                              </td>
+                            );
+                          })}
+                          <td className="summary-matrix__total-col">
+                            {formatCellMinutes(twoAxisMatrix.rowTotals[row] ?? 0)}
                           </td>
                         </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </section>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <th scope="row">計</th>
+                        {twoAxisMatrix.colKeys.map(col => (
+                          <td key={col} className="summary-matrix__total-col">
+                            {formatCellMinutes(twoAxisMatrix.colTotals[col] ?? 0)}
+                          </td>
+                        ))}
+                        <td className="summary-matrix__grand">
+                          {formatCellMinutes(twoAxisMatrix.totalMinutes)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               )}
-            </>
+            </div>
           )}
         </>
       ) : (

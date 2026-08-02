@@ -134,18 +134,18 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg: #e6eaf2;
+  --bg: #f3f4f6;
   --bg2: #ffffff;
-  --bg3: #d5dce8;
-  --border: #8b9bb5;
-  --accent: #2f62c9;
+  --bg3: #eceef2;
+  --border: #c8ced8;
+  --accent: #2563eb;
   --accent2: #1d4ed8;
   --text: #111827;
-  --text2: #334155;
+  --text2: #4b5563;
   --red: #dc2626;
   /* ニュートラル＋青アクセントに対し、やや青みの深ティール（補色で締める） */
   --green: #0f766e;
-  --shadow: 0 2px 14px rgba(15, 23, 42, 0.12);
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 
   --on-primary: #ffffff;
   --on-danger-solid: #ffffff;
@@ -193,8 +193,8 @@
   --col-blue-border: rgba(37, 99, 235, 0.28);
   --col-emerald-soft: rgba(15, 118, 110, 0.08);
   --col-emerald-border: rgba(45, 212, 191, 0.32);
-  --table-subheader-text: #334155;
-  --col-year-text: #334155;
+  --table-subheader-text: #4b5563;
+  --col-year-text: #4b5563;
   --col-blue-faded: rgba(37, 99, 235, 0.04);
   --col-emerald-faded: rgba(15, 118, 110, 0.04);
   --group-start-bg: rgba(37, 99, 235, 0.14);
@@ -202,7 +202,7 @@
   --group-end-bg: rgba(15, 118, 110, 0.12);
   --group-end-text: #0f766e;
 
-  --memo-empty: #475569;
+  --memo-empty: #6b7280;
   --border-icon-btn: var(--border);
   --btn-icon-fg: #1e293b;
 
