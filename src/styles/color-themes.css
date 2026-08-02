@@ -134,14 +134,14 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --bg: #eef0f6;
+  --bg: #e6eaf2;
   --bg2: #ffffff;
-  --bg3: #e4e9f3;
-  --border: #c5cedf;
-  --accent: #3b6fd8;
-  --accent2: #2563eb;
-  --text: #1a2233;
-  --text2: #4a5670;
+  --bg3: #d5dce8;
+  --border: #8b9bb5;
+  --accent: #2f62c9;
+  --accent2: #1d4ed8;
+  --text: #111827;
+  --text2: #334155;
   --red: #dc2626;
   /* ニュートラル＋青アクセントに対し、やや青みの深ティール（補色で締める） */
   --green: #0f766e;
@@ -193,8 +193,8 @@
   --col-blue-border: rgba(37, 99, 235, 0.28);
   --col-emerald-soft: rgba(15, 118, 110, 0.08);
   --col-emerald-border: rgba(45, 212, 191, 0.32);
-  --table-subheader-text: #64748b;
-  --col-year-text: #64748b;
+  --table-subheader-text: #334155;
+  --col-year-text: #334155;
   --col-blue-faded: rgba(37, 99, 235, 0.04);
   --col-emerald-faded: rgba(15, 118, 110, 0.04);
   --group-start-bg: rgba(37, 99, 235, 0.14);
@@ -202,7 +202,7 @@
   --group-end-bg: rgba(15, 118, 110, 0.12);
   --group-end-text: #0f766e;
 
-  --memo-empty: #64748b;
+  --memo-empty: #475569;
   --border-icon-btn: var(--border);
   --btn-icon-fg: #1e293b;
 

@@ -2868,8 +2868,9 @@ select:focus-visible,
   gap: 10px 12px;
   padding: 12px 14px;
   background: var(--bg2);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 
 .summary-axis-pickers__field {
@@ -2888,12 +2889,13 @@ select:focus-visible,
 
 .summary-axis-pickers__field select {
   background: var(--bg3);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   color: var(--text);
   padding: 8px 10px;
   min-height: 40px;
   border-radius: var(--radius-sm);
   font-size: 0.9rem;
+  font-weight: 600;
   width: 100%;
 }
 
@@ -2917,9 +2919,10 @@ select:focus-visible,
 
 .summary-week-card {
   background: var(--bg2);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .summary-week-card__head {
@@ -2928,14 +2931,15 @@ select:focus-visible,
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg);
+  border-bottom: 1.5px solid var(--border);
+  background: var(--bg3);
 }
 
 .summary-week-card__head h3 {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
+  color: var(--text);
 }
 
 .summary-week-card__head strong {
@@ -2953,6 +2957,7 @@ select:focus-visible,
 
 .summary-matrix {
   min-width: 420px;
+  border-collapse: collapse;
 }
 
 .summary-matrix th,
@@ -2960,11 +2965,29 @@ select:focus-visible,
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  color: var(--text);
 }
 
-.summary-matrix thead th,
+.summary-matrix thead th {
+  text-align: left;
+  background: var(--bg3);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
 .summary-matrix tbody th {
   text-align: left;
+  background: var(--bg2);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.summary-matrix tbody tr:nth-child(even) th,
+.summary-matrix tbody tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--bg3) 55%, var(--bg2));
 }
 
 .summary-matrix__corner {
@@ -2973,22 +2996,24 @@ select:focus-visible,
 
 .summary-matrix__cell {
   color: var(--text);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .summary-matrix__empty {
   color: var(--text2);
-  opacity: 0.55;
+  font-weight: 600;
 }
 
 .summary-matrix__total {
-  font-weight: 700;
-  background: var(--bg);
+  font-weight: 800;
+  background: var(--bg3) !important;
+  color: var(--text);
 }
 
 .summary-matrix__foot th,
 .summary-matrix__foot td {
-  border-top: 1px solid var(--border);
+  border-top: 2px solid var(--border);
+  background: var(--bg3) !important;
 }
 
 .summary-nav {
@@ -3009,7 +3034,7 @@ select:focus-visible,
 
 .summary-total {
   background: var(--bg2);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius);
   padding: 16px 18px;
   display: flex;
@@ -3017,6 +3042,7 @@ select:focus-visible,
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
+  box-shadow: var(--shadow);
 }
 
 .summary-total__label {
@@ -3040,9 +3066,10 @@ select:focus-visible,
 
 .summary-table-wrap {
   background: var(--bg2);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+  box-shadow: var(--shadow);
 }
 
 .summary-table {
@@ -3055,15 +3082,17 @@ select:focus-visible,
   text-align: left;
   padding: 12px 14px;
   font-size: 0.8rem;
-  color: var(--text2);
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 700;
+  background: var(--bg3);
+  border-bottom: 1.5px solid var(--border);
 }
 
 .summary-table td {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   vertical-align: middle;
+  color: var(--text);
 }
 
 .summary-table tbody tr:last-child td {
