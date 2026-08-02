@@ -1,4 +1,4 @@
-import type { WorkRecord } from '../types';
+import type { CategoryAssignment, WorkRecord } from '../types';
 import { parseWorkRecordsArray } from './recordValidation';
 
 /**
@@ -7,7 +7,15 @@ import { parseWorkRecordsArray } from './recordValidation';
  * - RFC 4180 風: カンマ・改行・ダブルクオートを含むセルは "..." で囲み、" は "" にエスケープ
  */
 
-const CSV_HEADERS = ['id', 'startAt', 'endAt', 'category', 'categoryOption', 'memo'] as const;
+const CSV_HEADERS = [
+  'id',
+  'startAt',
+  'endAt',
+  'category',
+  'categoryOption',
+  'categories',
+  'memo',
+] as const;
 const UTF8_BOM = '\uFEFF';
 
 function escapeCell(value: string): string {
@@ -18,13 +26,69 @@ function escapeCell(value: string): string {
   return value;
 }
 
+/** categories を CSV セル用にシリアライズ（name:option|name:option） */
+export function serializeCategoriesCell(categories: CategoryAssignment[] | undefined): string {
+  if (!Array.isArray(categories) || categories.length === 0) return '';
+  return categories
+    .map(a => {
+      const name = (a.name ?? '').replace(/[|:]/g, ' ');
+      const option = (a.option ?? '').replace(/[|:]/g, ' ');
+      return option ? `${name}:${option}` : name;
+    })
+    .join('|');
+}
+
+/** CSV セルから categories を復元 */
+export function parseCategoriesCell(raw: string): CategoryAssignment[] {
+  const t = raw.trim();
+  if (!t) return [];
+  // JSON 配列も許容
+  if (t.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(t) as unknown;
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map(item => {
+            if (item === null || typeof item !== 'object') return null;
+            const o = item as Record<string, unknown>;
+            const name = typeof o.name === 'string' ? o.name.trim() : '';
+            if (!name) return null;
+            const option = typeof o.option === 'string' ? o.option.trim() : '';
+            return { name, option };
+          })
+          .filter((a): a is CategoryAssignment => a !== null);
+      }
+    } catch {
+      /* fall through */
+    }
+  }
+  return t
+    .split('|')
+    .map(part => {
+      const p = part.trim();
+      if (!p) return null;
+      const idx = p.indexOf(':');
+      if (idx < 0) return { name: p, option: '' };
+      return { name: p.slice(0, idx).trim(), option: p.slice(idx + 1).trim() };
+    })
+    .filter((a): a is CategoryAssignment => a !== null);
+}
+
 /** WorkRecord[] → CSV テキスト（BOM 付き） */
 export function recordsToCsv(records: WorkRecord[]): string {
   const lines: string[] = [];
   lines.push(CSV_HEADERS.join(','));
   for (const r of records) {
     lines.push(
-      [r.id, r.startAt, r.endAt, r.category ?? '', r.categoryOption ?? '', r.memo]
+      [
+        r.id,
+        r.startAt,
+        r.endAt,
+        r.category ?? '',
+        r.categoryOption ?? '',
+        serializeCategoriesCell(r.categories),
+        r.memo,
+      ]
         .map(v => escapeCell(String(v ?? '')))
         .join(',')
     );
@@ -106,7 +170,7 @@ export interface CsvImportResult {
 
 /**
  * CSV テキストを WorkRecord[] に変換。
- * 列は id,startAt,endAt,category,categoryOption,memo を想定（旧形式も可）。
+ * 列は id,startAt,endAt,category,categoryOption,categories,memo を想定（旧形式も可）。
  */
 export function csvToRecords(text: string): CsvImportResult {
   const rows = parseCsv(text).filter(r => r.length > 0 && r.some(c => c !== ''));
@@ -123,6 +187,7 @@ export function csvToRecords(text: string): CsvImportResult {
   let endIdx = 2;
   let categoryIdx = -1;
   let optionIdx = -1;
+  let categoriesIdx = -1;
   let memoIdx = 3;
   let dataRows: string[][];
 
@@ -132,22 +197,31 @@ export function csvToRecords(text: string): CsvImportResult {
     endIdx = headerCells.indexOf('endat');
     categoryIdx = headerCells.indexOf('category');
     optionIdx = headerCells.indexOf('categoryoption');
+    categoriesIdx = headerCells.indexOf('categories');
     memoIdx = headerCells.indexOf('memo');
     dataRows = rows.slice(1);
   } else {
     dataRows = rows;
     const sample = dataRows[0] ?? [];
-    if (sample.length >= 6) {
+    if (sample.length >= 7) {
       categoryIdx = 3;
       optionIdx = 4;
+      categoriesIdx = 5;
+      memoIdx = 6;
+    } else if (sample.length >= 6) {
+      categoryIdx = 3;
+      optionIdx = 4;
+      categoriesIdx = -1;
       memoIdx = 5;
     } else if (sample.length >= 5) {
       categoryIdx = 3;
       optionIdx = -1;
+      categoriesIdx = -1;
       memoIdx = 4;
     } else {
       categoryIdx = -1;
       optionIdx = -1;
+      categoriesIdx = -1;
       memoIdx = 3;
     }
   }
@@ -158,6 +232,7 @@ export function csvToRecords(text: string): CsvImportResult {
     endAt: cells[endIdx] ?? '',
     category: categoryIdx >= 0 ? (cells[categoryIdx] ?? '') : '',
     categoryOption: optionIdx >= 0 ? (cells[optionIdx] ?? '') : '',
+    categories: categoriesIdx >= 0 ? parseCategoriesCell(cells[categoriesIdx] ?? '') : [],
     memo: cells[memoIdx] ?? '',
   }));
   const records = parseWorkRecordsArray(raw);

@@ -1,4 +1,5 @@
-import type { ArchivedMonth, WorkRecord } from '../types';
+import type { ArchivedMonth, CategoryAssignment, WorkRecord } from '../types';
+import { MAX_CATEGORY_ASSIGNMENTS } from '../types';
 
 /** メモ・シートセルの上限（DoS / localStorage 肥大化の緩和） */
 export const MAX_MEMO_CHARS = 8_000;
@@ -53,6 +54,62 @@ export function truncateCategory(category: string): string {
   return t.slice(0, MAX_CATEGORY_CHARS);
 }
 
+function parseAssignment(raw: unknown): CategoryAssignment | null {
+  if (raw === null || typeof raw !== 'object') return null;
+  const o = raw as Record<string, unknown>;
+  const name = truncateCategory(typeof o.name === 'string' ? o.name : String(o.name ?? ''));
+  if (!name) return null;
+  const option = truncateCategory(
+    typeof o.option === 'string' ? o.option : o.option == null ? '' : String(o.option)
+  );
+  return { name, option };
+}
+
+/** 配列／旧フィールドから正規化し、先頭と category/categoryOption を同期 */
+export function normalizeCategoryAssignments(
+  categoriesRaw: unknown,
+  legacyCategory = '',
+  legacyOption = ''
+): { categories: CategoryAssignment[]; category: string; categoryOption: string } {
+  const out: CategoryAssignment[] = [];
+  const seen = new Set<string>();
+
+  if (Array.isArray(categoriesRaw)) {
+    for (const item of categoriesRaw) {
+      if (out.length >= MAX_CATEGORY_ASSIGNMENTS) break;
+      const a = parseAssignment(item);
+      if (!a) continue;
+      const key = a.name.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(a);
+    }
+  }
+
+  if (out.length === 0) {
+    const c = truncateCategory(legacyCategory);
+    const o = truncateCategory(legacyOption);
+    if (c || o) {
+      out.push({ name: c || '未分類', option: o });
+    }
+  }
+
+  const first = out[0];
+  return {
+    categories: out,
+    category: first?.name ?? '',
+    categoryOption: first?.option ?? '',
+  };
+}
+
+/** assignments から legacy フィールド付きの保存形を作る */
+export function withSyncedCategoryFields(
+  categories: CategoryAssignment[]
+): Pick<WorkRecord, 'categories' | 'category' | 'categoryOption'> {
+  const normalized = normalizeCategoryAssignments(categories);
+  return normalized;
+}
+
 /** 1 件を検証。不正なら null（破棄）。memo は長すぎる場合のみ切り詰め */
 export function parseWorkRecord(raw: unknown): WorkRecord | null {
   if (raw === null || typeof raw !== 'object') return null;
@@ -66,26 +123,26 @@ export function parseWorkRecord(raw: unknown): WorkRecord | null {
   const memoRaw = o.memo;
   const memo =
     typeof memoRaw === 'string' ? truncateMemo(memoRaw) : memoRaw == null ? '' : truncateMemo(String(memoRaw));
-  const categoryRaw = o.category;
-  const category =
-    typeof categoryRaw === 'string'
-      ? truncateCategory(categoryRaw)
-      : categoryRaw == null
+  const legacyCategory =
+    typeof o.category === 'string' ? o.category : o.category == null ? '' : String(o.category);
+  const legacyOption =
+    typeof o.categoryOption === 'string'
+      ? o.categoryOption
+      : o.categoryOption == null
         ? ''
-        : truncateCategory(String(categoryRaw));
-  const optionRaw = o.categoryOption;
-  const categoryOption =
-    typeof optionRaw === 'string'
-      ? truncateCategory(optionRaw)
-      : optionRaw == null
-        ? ''
-        : truncateCategory(String(optionRaw));
+        : String(o.categoryOption);
+  const { categories, category, categoryOption } = normalizeCategoryAssignments(
+    o.categories,
+    legacyCategory,
+    legacyOption
+  );
   return {
     id: id.trim(),
     startAt: startAt.trim(),
     endAt: endAt.trim(),
     category,
     categoryOption,
+    categories,
     memo,
   };
 }

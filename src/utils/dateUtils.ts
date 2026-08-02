@@ -1,24 +1,42 @@
 import { differenceInMinutes, format, parseISO, startOfWeek, addDays } from 'date-fns';
-import type { ArchivedMonth, WorkRecord } from '../types';
+import type { ArchivedMonth, CategoryAssignment, WorkRecord } from '../types';
+import { withSyncedCategoryFields } from './recordValidation';
 
 /** 種別未設定の表示名（集計用） */
 export const UNCATEGORIZED_LABEL = '未分類';
 
-/** 表示用ラベル（カテゴリ / 選択肢） */
+export function getRecordCategories(r: WorkRecord): CategoryAssignment[] {
+  if (Array.isArray(r.categories) && r.categories.length > 0) return r.categories;
+  const c = r.category?.trim() ?? '';
+  const o = r.categoryOption?.trim() ?? '';
+  if (!c && !o) return [];
+  return [{ name: c || UNCATEGORIZED_LABEL, option: o }];
+}
+
+/** 表示用（複数カテゴリ） */
+export function formatRecordCategories(r: WorkRecord): string {
+  const list = getRecordCategories(r);
+  if (list.length === 0) return UNCATEGORIZED_LABEL;
+  return list
+    .map(a => (a.option.trim() ? `${a.name}: ${a.option}` : a.name))
+    .join(' ｜ ');
+}
+
+/** 表示用ラベル（単一・後方互換） */
 export function formatCategoryLabel(category: string, categoryOption?: string): string {
   const c = category?.trim() ?? '';
   const o = categoryOption?.trim() ?? '';
   if (!c && !o) return UNCATEGORIZED_LABEL;
-  if (c && o) return `${c} / ${o}`;
+  if (c && o) return `${c}: ${o}`;
   return c || o;
 }
 
-/** 集計キー（カテゴリ名優先。無ければ選択肢・未分類） */
-export function categoryGroupKey(category: string, categoryOption?: string): string {
-  const c = category?.trim() ?? '';
-  if (c) return c;
-  const o = categoryOption?.trim() ?? '';
-  return o || UNCATEGORIZED_LABEL;
+/** assignments を legacy 付きでレコードに載せる */
+export function applyCategoriesToRecord<T extends object>(
+  record: T,
+  categories: CategoryAssignment[]
+): T & Pick<WorkRecord, 'categories' | 'category' | 'categoryOption'> {
+  return { ...record, ...withSyncedCategoryFields(categories) };
 }
 
 /** 各レコードの (終了−開始) を分で合計（負や不正は 0 扱い） */
@@ -59,47 +77,73 @@ export function getWeekDays(baseDate: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => addDays(start, i));
 }
 
-/** 入力候補用：使われたカテゴリ名を昇順で返す */
-export function collectCategorySuggestions(...recordLists: WorkRecord[][]): string[] {
-  const set = new Set<string>();
-  for (const list of recordLists) {
-    for (const r of list) {
-      const c = r.category?.trim();
-      if (c) set.add(c);
-    }
-  }
-  return Array.from(set).sort((a, b) => a.localeCompare(b, 'ja'));
-}
-
 export interface CategorySummaryRow {
   category: string;
   minutes: number;
 }
 
-/** カテゴリごとの合計時間（分）。未設定は「未分類」 */
+/**
+ * 指定カテゴリ次元の選択肢ごとの合計。
+ * dimension が空なら「カテゴリ名: 選択肢」のフラット集計（各軸に同一時間を加算）。
+ */
+export function summarizeByCategoryDimension(
+  records: WorkRecord[],
+  dimension?: string
+): CategorySummaryRow[] {
+  const map = new Map<string, number>();
+  const dim = dimension?.trim() ?? '';
+
+  for (const r of records) {
+    const mins = Math.max(0, differenceInMinutes(parseISO(r.endAt), parseISO(r.startAt)));
+    const cats = getRecordCategories(r);
+
+    if (dim) {
+      const hit = cats.find(c => c.name === dim);
+      const key = hit?.option?.trim()
+        ? hit.option.trim()
+        : hit
+          ? '（選択肢なし）'
+          : UNCATEGORIZED_LABEL;
+      map.set(key, (map.get(key) ?? 0) + mins);
+      continue;
+    }
+
+    if (cats.length === 0) {
+      map.set(UNCATEGORIZED_LABEL, (map.get(UNCATEGORIZED_LABEL) ?? 0) + mins);
+      continue;
+    }
+    for (const a of cats) {
+      const key = a.option.trim() ? `${a.name}: ${a.option}` : a.name;
+      map.set(key, (map.get(key) ?? 0) + mins);
+    }
+  }
+
+  return Array.from(map.entries())
+    .map(([category, minutes]) => ({ category, minutes }))
+    .sort((a, b) => b.minutes - a.minutes || a.category.localeCompare(b.category, 'ja'));
+}
+
+/** カテゴリ名ごとの合計（各軸に同一時間を加算） */
 export function summarizeByCategory(records: WorkRecord[]): CategorySummaryRow[] {
   const map = new Map<string, number>();
   for (const r of records) {
-    const key = categoryGroupKey(r.category, r.categoryOption);
+    const cats = getRecordCategories(r);
     const mins = Math.max(0, differenceInMinutes(parseISO(r.endAt), parseISO(r.startAt)));
-    map.set(key, (map.get(key) ?? 0) + mins);
+    if (cats.length === 0) {
+      map.set(UNCATEGORIZED_LABEL, (map.get(UNCATEGORIZED_LABEL) ?? 0) + mins);
+      continue;
+    }
+    for (const a of cats) {
+      map.set(a.name, (map.get(a.name) ?? 0) + mins);
+    }
   }
   return Array.from(map.entries())
     .map(([category, minutes]) => ({ category, minutes }))
     .sort((a, b) => b.minutes - a.minutes || a.category.localeCompare(b.category, 'ja'));
 }
 
-/** 選択肢ごとの合計（同カテゴリ内の内訳） */
 export function summarizeByCategoryOption(records: WorkRecord[]): CategorySummaryRow[] {
-  const map = new Map<string, number>();
-  for (const r of records) {
-    const key = formatCategoryLabel(r.category, r.categoryOption);
-    const mins = Math.max(0, differenceInMinutes(parseISO(r.endAt), parseISO(r.startAt)));
-    map.set(key, (map.get(key) ?? 0) + mins);
-  }
-  return Array.from(map.entries())
-    .map(([category, minutes]) => ({ category, minutes }))
-    .sort((a, b) => b.minutes - a.minutes || a.category.localeCompare(b.category, 'ja'));
+  return summarizeByCategoryDimension(records);
 }
 
 export interface MonthSummaryRow {

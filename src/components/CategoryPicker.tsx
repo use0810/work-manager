@@ -1,27 +1,41 @@
 import { useMemo, useState } from 'react';
-import type { CategoryDefinition } from '../types';
+import type { CategoryAssignment, CategoryDefinition } from '../types';
 import { MAX_CATEGORY_OPTIONS } from '../types';
 import {
   addCategoryName,
   addOptionToCategory,
   saveCategoryDefinitions,
 } from '../utils/categoryDefsStorage';
+import { withSyncedCategoryFields } from '../utils/recordValidation';
 
 interface Props {
-  category: string;
-  categoryOption: string;
+  value: CategoryAssignment[];
   definitions: CategoryDefinition[];
   onDefinitionsChange: (next: CategoryDefinition[]) => void;
-  onChange: (next: { category: string; categoryOption: string }) => void;
-  /** datalist / id 衝突回避 */
+  onChange: (next: CategoryAssignment[]) => void;
   idPrefix?: string;
   compact?: boolean;
 }
 
-/** 記録時のカテゴリ＋選択肢ピッカー（設定済み定義から選択／その場で追加可） */
+function optionOf(value: CategoryAssignment[], name: string): string {
+  return value.find(v => v.name === name)?.option ?? '';
+}
+
+function setOption(
+  value: CategoryAssignment[],
+  name: string,
+  option: string
+): CategoryAssignment[] {
+  const trimmedOpt = option.trim();
+  const without = value.filter(v => v.name !== name);
+  // 未選択ならそのカテゴリ行自体を外す
+  if (!trimmedOpt) return without;
+  return [...without, { name, option: trimmedOpt }];
+}
+
+/** 定義済みカテゴリを並べ、それぞれ選択肢を選ぶ（複数カテゴリ同時選択） */
 export default function CategoryPicker({
-  category,
-  categoryOption,
+  value,
   definitions,
   onDefinitionsChange,
   onChange,
@@ -29,20 +43,18 @@ export default function CategoryPicker({
   compact,
 }: Props) {
   const [newCat, setNewCat] = useState('');
-  const [newOpt, setNewOpt] = useState('');
+  const [newOptByCat, setNewOptByCat] = useState<Record<string, string>>({});
+  const [addingFor, setAddingFor] = useState<string | null>(null);
 
-  const selectedDef = useMemo(
-    () => definitions.find(d => d.name === category) ?? null,
-    [definitions, category]
-  );
+  const selectedMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const a of value) m.set(a.name, a.option);
+    return m;
+  }, [value]);
 
   function persist(next: CategoryDefinition[]) {
     saveCategoryDefinitions(next);
     onDefinitionsChange(next);
-  }
-
-  function handleCategorySelect(name: string) {
-    onChange({ category: name, categoryOption: '' });
   }
 
   function handleAddCategory() {
@@ -50,55 +62,92 @@ export default function CategoryPicker({
     if (!t) return;
     const next = addCategoryName(definitions, t);
     persist(next);
-    onChange({ category: t, categoryOption: '' });
     setNewCat('');
   }
 
-  function handleAddOption() {
-    if (!selectedDef) return;
-    const t = newOpt.trim();
+  function handleAddOption(def: CategoryDefinition) {
+    const t = (newOptByCat[def.id] ?? '').trim();
     if (!t) return;
-    if (selectedDef.options.length >= MAX_CATEGORY_OPTIONS) return;
-    const next = addOptionToCategory(definitions, selectedDef.id, t);
+    if (def.options.length >= MAX_CATEGORY_OPTIONS) return;
+    const next = addOptionToCategory(definitions, def.id, t);
     persist(next);
-    onChange({ category: selectedDef.name, categoryOption: t });
-    setNewOpt('');
+    onChange(setOption(value, def.name, t));
+    setNewOptByCat(prev => ({ ...prev, [def.id]: '' }));
+    setAddingFor(null);
   }
 
   return (
     <div className={`category-picker ${compact ? 'category-picker--compact' : ''}`}>
-      <label className="category-picker__field">
-        <span>カテゴリ</span>
-        <select
-          value={category}
-          onChange={e => handleCategorySelect(e.target.value)}
-          aria-label="カテゴリ"
-        >
-          <option value="">未分類</option>
-          {definitions.map(d => (
-            <option key={d.id} value={d.name}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <p className="category-picker__hint">
+        複数のカテゴリを同時に選べます（例: プロジェクト＋業務内容）
+      </p>
 
-      <label className="category-picker__field">
-        <span>選択肢</span>
-        <select
-          value={categoryOption}
-          onChange={e => onChange({ category, categoryOption: e.target.value })}
-          disabled={!selectedDef}
-          aria-label="カテゴリの選択肢"
-        >
-          <option value="">{selectedDef ? '（なし）' : 'カテゴリを先に選択'}</option>
-          {(selectedDef?.options ?? []).map(o => (
-            <option key={o} value={o}>
-              {o}
-            </option>
-          ))}
-        </select>
-      </label>
+      {definitions.length === 0 ? (
+        <p className="category-picker__empty">
+          まだカテゴリがありません。下で追加するか、設定の「カテゴリ管理」から作成してください。
+        </p>
+      ) : (
+        <div className="category-picker__rows">
+          {definitions.map(def => {
+            const selected = selectedMap.get(def.name) ?? '';
+            const remaining = MAX_CATEGORY_OPTIONS - def.options.length;
+            return (
+              <div key={def.id} className="category-picker__row">
+                <label className="category-picker__field">
+                  <span>{def.name}</span>
+                  <select
+                    value={selected}
+                    onChange={e => onChange(setOption(value, def.name, e.target.value))}
+                    aria-label={`${def.name}の選択肢`}
+                  >
+                    <option value="">（未選択）</option>
+                    {def.options.map(o => (
+                      <option key={o} value={o}>
+                        {o}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {addingFor === def.id ? (
+                  <div className="category-picker__quick-row">
+                    <input
+                      type="text"
+                      value={newOptByCat[def.id] ?? ''}
+                      onChange={e =>
+                        setNewOptByCat(prev => ({ ...prev, [def.id]: e.target.value }))
+                      }
+                      placeholder={`選択肢を追加（残り ${remaining}）`}
+                      maxLength={64}
+                      disabled={remaining <= 0}
+                      id={`${idPrefix}-opt-${def.id}`}
+                    />
+                    <button
+                      type="button"
+                      className="btn-nav"
+                      onClick={() => handleAddOption(def)}
+                      disabled={!(newOptByCat[def.id] ?? '').trim() || remaining <= 0}
+                    >
+                      追加
+                    </button>
+                    <button type="button" className="btn-cancel" onClick={() => setAddingFor(null)}>
+                      閉じる
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn-nav category-picker__add-opt"
+                    onClick={() => setAddingFor(def.id)}
+                    disabled={remaining <= 0}
+                  >
+                    選択肢＋
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="category-picker__quick">
         <div className="category-picker__quick-row">
@@ -106,7 +155,7 @@ export default function CategoryPicker({
             type="text"
             value={newCat}
             onChange={e => setNewCat(e.target.value)}
-            placeholder="新カテゴリ名"
+            placeholder="新カテゴリ名（例: プロジェクト）"
             maxLength={64}
             aria-label="新しいカテゴリ名"
             id={`${idPrefix}-new-cat`}
@@ -115,29 +164,18 @@ export default function CategoryPicker({
             カテゴリ追加
           </button>
         </div>
-        {selectedDef ? (
-          <div className="category-picker__quick-row">
-            <input
-              type="text"
-              value={newOpt}
-              onChange={e => setNewOpt(e.target.value)}
-              placeholder={`選択肢を追加（残り ${MAX_CATEGORY_OPTIONS - selectedDef.options.length}）`}
-              maxLength={64}
-              disabled={selectedDef.options.length >= MAX_CATEGORY_OPTIONS}
-              aria-label="新しい選択肢"
-              id={`${idPrefix}-new-opt`}
-            />
-            <button
-              type="button"
-              className="btn-nav"
-              onClick={handleAddOption}
-              disabled={!newOpt.trim() || selectedDef.options.length >= MAX_CATEGORY_OPTIONS}
-            >
-              選択肢追加
-            </button>
-          </div>
-        ) : null}
       </div>
+
+      {value.length > 0 ? (
+        <p className="category-picker__selected">
+          選択中:{' '}
+          {withSyncedCategoryFields(value).categories
+            .map(a => (a.option ? `${a.name}: ${a.option}` : a.name))
+            .join(' ｜ ')}
+        </p>
+      ) : null}
     </div>
   );
 }
+
+export { optionOf };

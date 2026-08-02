@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { WorkRecord } from '../types';
+import type { CategoryDefinition, WorkRecord } from '../types';
 import { loadArchives } from '../utils/storage';
 import {
   formatHoursMinutes,
+  getRecordCategories,
   listAvailableYearMonths,
   recordsForYearMonth,
-  summarizeByCategory,
-  summarizeByCategoryOption,
+  summarizeByCategoryDimension,
   summarizeByMonths,
   totalWorkMinutes,
   yearMonthFromIso,
@@ -14,12 +14,17 @@ import {
 
 interface Props {
   records: WorkRecord[];
+  categoryDefinitions?: CategoryDefinition[];
   refreshKey?: number;
 }
 
 type ViewMode = 'month' | 'overview';
 
-export default function SummaryTab({ records, refreshKey = 0 }: Props) {
+export default function SummaryTab({
+  records,
+  categoryDefinitions = [],
+  refreshKey = 0,
+}: Props) {
   const archives = useMemo(() => loadArchives(), [refreshKey, records]);
   const months = useMemo(
     () => listAvailableYearMonths(records, archives),
@@ -34,7 +39,8 @@ export default function SummaryTab({ records, refreshKey = 0 }: Props) {
 
   const [month, setMonth] = useState(defaultMonth);
   const [view, setView] = useState<ViewMode>('month');
-  const [breakdown, setBreakdown] = useState<'category' | 'option'>('category');
+  /** 空文字 = 全カテゴリをフラット表示 / それ以外 = その次元の選択肢別 */
+  const [dimension, setDimension] = useState('');
 
   useEffect(() => {
     if (months.length === 0) {
@@ -49,9 +55,29 @@ export default function SummaryTab({ records, refreshKey = 0 }: Props) {
     () => recordsForYearMonth(month, records, archives),
     [month, records, archives]
   );
-  const categoryRows = useMemo(() => summarizeByCategory(monthRecords), [monthRecords]);
-  const optionRows = useMemo(() => summarizeByCategoryOption(monthRecords), [monthRecords]);
-  const rows = breakdown === 'category' ? categoryRows : optionRows;
+
+  const dimensionNames = useMemo(() => {
+    const names = new Set<string>();
+    for (const d of categoryDefinitions) {
+      const n = d.name.trim();
+      if (n) names.add(n);
+    }
+    for (const r of monthRecords) {
+      for (const a of getRecordCategories(r)) {
+        if (a.name.trim()) names.add(a.name.trim());
+      }
+    }
+    return Array.from(names).sort((a, b) => a.localeCompare(b, 'ja'));
+  }, [categoryDefinitions, monthRecords]);
+
+  useEffect(() => {
+    if (dimension && !dimensionNames.includes(dimension)) setDimension('');
+  }, [dimension, dimensionNames]);
+
+  const rows = useMemo(
+    () => summarizeByCategoryDimension(monthRecords, dimension || undefined),
+    [monthRecords, dimension]
+  );
   const totalMins = totalWorkMinutes(monthRecords);
 
   const overviewMonths = useMemo(() => months.slice(0, 12).reverse(), [months]);
@@ -72,6 +98,10 @@ export default function SummaryTab({ records, refreshKey = 0 }: Props) {
     if (monthIndex <= 0) return;
     setMonth(months[monthIndex - 1]);
   }
+
+  const breakdownLabel = dimension
+    ? `${dimension}の選択肢`
+    : 'カテゴリ / 選択肢';
 
   return (
     <div className="summary-tab">
@@ -110,12 +140,16 @@ export default function SummaryTab({ records, refreshKey = 0 }: Props) {
                   <div className="summary-vchart__track">
                     <div className="summary-vchart__bar" style={{ height: `${pct}%` }} />
                   </div>
-                  <div className="summary-vchart__label">{row.yearMonth.replace('年', '/').replace('月', '')}</div>
+                  <div className="summary-vchart__label">
+                    {row.yearMonth.replace('年', '/').replace('月', '')}
+                  </div>
                 </div>
               );
             })}
           </div>
-          <p className="summary-overview-hint">棒をクリックせず、上の「月別集計」で詳細を確認できます。</p>
+          <p className="summary-overview-hint">
+            棒をクリックせず、上の「月別集計」で詳細を確認できます。
+          </p>
         </div>
       ) : (
         <>
@@ -154,18 +188,21 @@ export default function SummaryTab({ records, refreshKey = 0 }: Props) {
           <div className="summary-view-toggle summary-view-toggle--sub" role="tablist" aria-label="内訳">
             <button
               type="button"
-              className={`summary-view-toggle__btn ${breakdown === 'category' ? 'is-active' : ''}`}
-              onClick={() => setBreakdown('category')}
+              className={`summary-view-toggle__btn ${dimension === '' ? 'is-active' : ''}`}
+              onClick={() => setDimension('')}
             >
-              カテゴリ別
+              すべて
             </button>
-            <button
-              type="button"
-              className={`summary-view-toggle__btn ${breakdown === 'option' ? 'is-active' : ''}`}
-              onClick={() => setBreakdown('option')}
-            >
-              選択肢別
-            </button>
+            {dimensionNames.map(name => (
+              <button
+                key={name}
+                type="button"
+                className={`summary-view-toggle__btn ${dimension === name ? 'is-active' : ''}`}
+                onClick={() => setDimension(name)}
+              >
+                {name}別
+              </button>
+            ))}
           </div>
 
           {rows.length === 0 ? (
@@ -195,7 +232,7 @@ export default function SummaryTab({ records, refreshKey = 0 }: Props) {
                 <table className="summary-table">
                   <thead>
                     <tr>
-                      <th>{breakdown === 'category' ? 'カテゴリ' : 'カテゴリ / 選択肢'}</th>
+                      <th>{breakdownLabel}</th>
                       <th>時間</th>
                       <th>割合</th>
                     </tr>

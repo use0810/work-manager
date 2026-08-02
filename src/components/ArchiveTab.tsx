@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import type { ArchivedMonth, WorkRecord } from '../types';
 import { loadArchives, deleteArchive, restoreArchive } from '../utils/storage';
 import { format, parseISO, differenceInMinutes } from 'date-fns';
+import { formatRecordCategories, getRecordCategories } from '../utils/dateUtils';
 import MemoModal from './MemoModal';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import RestoreConfirmModal from './RestoreConfirmModal';
@@ -94,6 +95,7 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
       endAt: a.archivedAt,
       category: '',
       categoryOption: '',
+      categories: [],
       memo: `${archiveLabel(a)}（${a.records.length}件 / ${totalTime(a.records)}）`,
     };
   }
@@ -170,15 +172,29 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
                               {format(parseISO(rec.endAt), 'yyyy/MM/dd HH:mm')}
                             </td>
                             <td>
-                              {rec.category?.trim() || rec.categoryOption?.trim()
-                                ? <span className="category-badge">{[rec.category, rec.categoryOption].filter(Boolean).join(' / ')}</span>
-                                : <span className="memo-empty">未分類</span>}
+                              {getRecordCategories(rec).length > 0 ? (
+                                <span className="category-badge">{formatRecordCategories(rec)}</span>
+                              ) : (
+                                <span className="memo-empty">未分類</span>
+                              )}
                             </td>
                             <td
                               className="memo-cell"
-                              style={{ cursor: rec.memo || rec.category || rec.categoryOption ? 'pointer' : 'default' }}
-                              onClick={() => (rec.memo || rec.category || rec.categoryOption) && setMemoModal(rec)}
-                              title={rec.memo || rec.category || rec.categoryOption ? 'クリックで詳細' : ''}
+                              style={{
+                                cursor:
+                                  rec.memo || getRecordCategories(rec).length > 0
+                                    ? 'pointer'
+                                    : 'default',
+                              }}
+                              onClick={() =>
+                                (rec.memo || getRecordCategories(rec).length > 0) &&
+                                setMemoModal(rec)
+                              }
+                              title={
+                                rec.memo || getRecordCategories(rec).length > 0
+                                  ? 'クリックで詳細'
+                                  : ''
+                              }
                             >
                               {rec.memo
                                 ? <span className="memo-badge">メモ</span>
@@ -199,6 +215,7 @@ export default function ArchiveTab({ refreshKey, records, onRecordsChange }: Pro
       {memoModal !== null && (
         <MemoModal
           memo={memoModal.memo}
+          categories={memoModal.categories}
           category={memoModal.category}
           categoryOption={memoModal.categoryOption}
           categoryDefinitions={[]}

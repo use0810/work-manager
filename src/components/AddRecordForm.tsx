@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
-import type { CategoryDefinition, WorkRecord } from '../types';
+import type { CategoryAssignment, CategoryDefinition, WorkRecord } from '../types';
 import {
   datetimeLocalToISO,
   isoToDatetimeLocal,
   noonTodayLocal,
 } from '../utils/datetimeLocal';
+import { applyCategoriesToRecord, getRecordCategories } from '../utils/dateUtils';
 import DateTimeStepPicker from './DateTimeStepPicker';
 import CategoryPicker from './CategoryPicker';
 
@@ -23,8 +24,7 @@ const AddRecordForm = forwardRef<AddRecordFormHandle, Props>(
     const init = noonTodayLocal();
     const [start, setStart] = useState(init);
     const [end, setEnd] = useState(init);
-    const [category, setCategory] = useState('');
-    const [categoryOption, setCategoryOption] = useState('');
+    const [categories, setCategories] = useState<CategoryAssignment[]>([]);
     const [memo, setMemo] = useState('');
     const [copied, setCopied] = useState(false);
     const formRef = useRef<HTMLFormElement>(null);
@@ -33,8 +33,7 @@ const AddRecordForm = forwardRef<AddRecordFormHandle, Props>(
       loadFrom(record: WorkRecord) {
         setStart(isoToDatetimeLocal(record.startAt));
         setEnd(isoToDatetimeLocal(record.endAt));
-        setCategory(record.category ?? '');
-        setCategoryOption(record.categoryOption ?? '');
+        setCategories(getRecordCategories(record));
         setMemo(record.memo);
         setCopied(true);
         formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -47,7 +46,6 @@ const AddRecordForm = forwardRef<AddRecordFormHandle, Props>(
       return () => clearTimeout(t);
     }, [copied]);
 
-    /** 開始を変えたら終了も一旦同じ値に揃える */
     function handleStartChange(next: string) {
       setStart(next);
       setEnd(next);
@@ -56,14 +54,17 @@ const AddRecordForm = forwardRef<AddRecordFormHandle, Props>(
     function handleSubmit(e: React.FormEvent) {
       e.preventDefault();
       if (!start || !end) return;
-      onAdd({
-        id: crypto.randomUUID(),
-        startAt: datetimeLocalToISO(start),
-        endAt: datetimeLocalToISO(end),
-        category: category.trim(),
-        categoryOption: categoryOption.trim(),
-        memo,
-      });
+      onAdd(
+        applyCategoriesToRecord(
+          {
+            id: crypto.randomUUID(),
+            startAt: datetimeLocalToISO(start),
+            endAt: datetimeLocalToISO(end),
+            memo,
+          },
+          categories
+        )
+      );
       setMemo('');
       setCopied(false);
     }
@@ -72,8 +73,7 @@ const AddRecordForm = forwardRef<AddRecordFormHandle, Props>(
       const next = noonTodayLocal();
       setStart(next);
       setEnd(next);
-      setCategory('');
-      setCategoryOption('');
+      setCategories([]);
       setMemo('');
       setCopied(false);
     }
@@ -109,14 +109,10 @@ const AddRecordForm = forwardRef<AddRecordFormHandle, Props>(
           </button>
         </div>
         <CategoryPicker
-          category={category}
-          categoryOption={categoryOption}
+          value={categories}
           definitions={categoryDefinitions}
           onDefinitionsChange={onCategoryDefinitionsChange}
-          onChange={({ category: c, categoryOption: o }) => {
-            setCategory(c);
-            setCategoryOption(o);
-          }}
+          onChange={setCategories}
           idPrefix="add-form"
         />
       </form>

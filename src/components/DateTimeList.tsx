@@ -4,6 +4,7 @@ import {
   groupByYearMonth,
   totalWorkMinutes,
   formatHoursMinutes,
+  applyCategoriesToRecord,
 } from '../utils/dateUtils';
 import {
   addRecord, updateRecord, deleteRecord, saveRecords,
@@ -184,13 +185,16 @@ export default function DateTimeList({
       {memoModalRecord !== null && (
         <MemoModal
           memo={memoModalRecord.memo}
+          categories={memoModalRecord.categories}
           category={memoModalRecord.category}
           categoryOption={memoModalRecord.categoryOption}
           categoryDefinitions={categoryDefinitions}
           onCategoryDefinitionsChange={onCategoryDefinitionsChange}
           editable
-          onSave={({ memo, category, categoryOption }) => {
-            handleUpdate({ ...memoModalRecord, memo, category, categoryOption });
+          onSave={({ memo, categories }) => {
+            handleUpdate(
+              applyCategoriesToRecord({ ...memoModalRecord, memo }, categories)
+            );
           }}
           onClose={() => setMemoModalRecord(null)}
         />

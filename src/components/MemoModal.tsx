@@ -1,63 +1,79 @@
 import { useEffect, useState } from 'react';
-import type { CategoryDefinition } from '../types';
+import type { CategoryAssignment, CategoryDefinition } from '../types';
 import CategoryPicker from './CategoryPicker';
-import { formatCategoryLabel } from '../utils/dateUtils';
+import { formatRecordCategories, getRecordCategories } from '../utils/dateUtils';
 
 interface Props {
   memo: string;
+  /** 編集時の初期カテゴリ（legacy 単体も可） */
   category?: string;
   categoryOption?: string;
+  categories?: CategoryAssignment[];
   categoryDefinitions: CategoryDefinition[];
   onCategoryDefinitionsChange: (next: CategoryDefinition[]) => void;
   onClose: () => void;
   editable?: boolean;
-  onSave?: (next: { memo: string; category: string; categoryOption: string }) => void;
+  onSave?: (next: { memo: string; categories: CategoryAssignment[] }) => void;
 }
 
 export default function MemoModal({
   memo,
   category = '',
   categoryOption = '',
+  categories,
   categoryDefinitions,
   onCategoryDefinitionsChange,
   onClose,
   editable = false,
   onSave,
 }: Props) {
+  const initialCats =
+    categories ??
+    getRecordCategories({
+      id: '',
+      startAt: new Date().toISOString(),
+      endAt: new Date().toISOString(),
+      category,
+      categoryOption,
+      categories: categories ?? [],
+      memo: '',
+    });
+
   const [draftMemo, setDraftMemo] = useState(memo);
-  const [draftCategory, setDraftCategory] = useState(category);
-  const [draftOption, setDraftOption] = useState(categoryOption);
+  const [draftCategories, setDraftCategories] = useState<CategoryAssignment[]>(initialCats);
 
   useEffect(() => {
     setDraftMemo(memo);
-    setDraftCategory(category);
-    setDraftOption(categoryOption);
-  }, [memo, category, categoryOption]);
+    setDraftCategories(
+      categories ??
+        getRecordCategories({
+          id: '',
+          startAt: new Date().toISOString(),
+          endAt: new Date().toISOString(),
+          category,
+          categoryOption,
+          categories: [],
+          memo: '',
+        })
+    );
+  }, [memo, category, categoryOption, categories]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
       if (editable && onSave && e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        onSave({
-          memo: draftMemo,
-          category: draftCategory.trim(),
-          categoryOption: draftOption.trim(),
-        });
+        onSave({ memo: draftMemo, categories: draftCategories });
         onClose();
       }
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose, editable, onSave, draftMemo, draftCategory, draftOption]);
+  }, [onClose, editable, onSave, draftMemo, draftCategories]);
 
   function handleSave() {
     if (editable && onSave) {
-      onSave({
-        memo: draftMemo,
-        category: draftCategory.trim(),
-        categoryOption: draftOption.trim(),
-      });
+      onSave({ memo: draftMemo, categories: draftCategories });
       onClose();
     }
   }
@@ -75,14 +91,10 @@ export default function MemoModal({
           {editable && onSave ? (
             <>
               <CategoryPicker
-                category={draftCategory}
-                categoryOption={draftOption}
+                value={draftCategories}
                 definitions={categoryDefinitions}
                 onDefinitionsChange={onCategoryDefinitionsChange}
-                onChange={({ category: c, categoryOption: o }) => {
-                  setDraftCategory(c);
-                  setDraftOption(o);
-                }}
+                onChange={setDraftCategories}
                 idPrefix="memo-modal"
                 compact
               />
@@ -103,7 +115,15 @@ export default function MemoModal({
             <>
               <p className="memo-modal-readonly-category">
                 <span className="memo-modal-readonly-label">カテゴリ</span>
-                {formatCategoryLabel(category, categoryOption)}
+                {formatRecordCategories({
+                  id: '',
+                  startAt: '',
+                  endAt: '',
+                  category,
+                  categoryOption,
+                  categories: categories ?? [],
+                  memo: '',
+                })}
               </p>
               {memo ? <p>{memo}</p> : <p className="empty">メモなし</p>}
             </>

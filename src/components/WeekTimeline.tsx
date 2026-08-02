@@ -4,10 +4,10 @@ import {
   startOfWeek, addDays, differenceInMinutes, addMinutes, startOfDay,
 } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import type { CategoryDefinition, WorkRecord } from '../types';
-import { formatHoursMinutes, formatCategoryLabel } from '../utils/dateUtils';
+import { formatHoursMinutes, formatRecordCategories, getRecordCategories, applyCategoriesToRecord } from '../utils/dateUtils';
 import { updateRecord } from '../utils/storage';
 import CategoryPicker from './CategoryPicker';
+import type { CategoryAssignment, CategoryDefinition, WorkRecord } from '../types';
 
 const HOUR_END = 24;
 const TOTAL_HOURS = HOUR_END;
@@ -23,11 +23,30 @@ const WEEK_DROP_ZONE_PX = 48;
 /** ビューポート上端・下端に近いとき、タイムライン内（.timeline-grid）を自動スクロール */
 const VIEWPORT_EDGE_AUTO_SCROLL_PX = 56;
 const AUTO_SCROLL_STEP_PX = 18;
+/** フィルター: そのカテゴリ未設定 */
+const FILTER_UNSET = '__unset__';
 
 /** true: 上下ハンドルで時間の伸縮。false にすると移動のみ（検証用） */
 const TIMELINE_EDGE_RESIZE = true;
 
 const DAY_LABELS = ['月', '火', '水', '木', '金', '土', '日'];
+
+type CategoryFilters = Record<string, string>;
+
+function recordMatchesFilters(r: WorkRecord, filters: CategoryFilters): boolean {
+  const active = Object.entries(filters).filter(([, v]) => v.trim() !== '');
+  if (active.length === 0) return true;
+  const cats = getRecordCategories(r);
+  for (const [dim, opt] of active) {
+    const hit = cats.find(c => c.name === dim);
+    if (opt === FILTER_UNSET) {
+      if (hit?.option?.trim()) return false;
+      continue;
+    }
+    if (!hit || hit.option !== opt) return false;
+  }
+  return true;
+}
 
 type DragKind = 'move' | 'resize-start' | 'resize-end';
 
@@ -225,12 +244,12 @@ export default function WeekTimeline({
   const [memoEdit, setMemoEdit] = useState<{
     record: WorkRecord;
     memo: string;
-    category: string;
-    categoryOption: string;
+    categories: CategoryAssignment[];
   } | null>(null);
   const [dragPreview, setDragPreview] = useState<{ id: string; startAt: string; endAt: string } | null>(null);
   const [timelineDragging, setTimelineDragging] = useState(false);
   const [weekDropHint, setWeekDropHint] = useState<'prev' | 'next' | null>(null);
+  const [filters, setFilters] = useState<CategoryFilters>({});
 
   const suppressClickRef = useRef(false);
   const previewRef = useRef<{ id: string; startAt: string; endAt: string } | null>(null);
@@ -247,16 +266,60 @@ export default function WeekTimeline({
 
   const weekDays = useMemo(() => getWeekDays(baseDate), [baseDate]);
 
+  const filterDimensions = useMemo(() => {
+    const map = new Map<string, Set<string>>();
+    for (const d of categoryDefinitions) {
+      const name = d.name.trim();
+      if (!name) continue;
+      if (!map.has(name)) map.set(name, new Set());
+      for (const o of d.options) {
+        const t = o.trim();
+        if (t) map.get(name)!.add(t);
+      }
+    }
+    for (const r of records) {
+      for (const a of getRecordCategories(r)) {
+        const name = a.name.trim();
+        if (!name) continue;
+        if (!map.has(name)) map.set(name, new Set());
+        const opt = a.option.trim();
+        if (opt) map.get(name)!.add(opt);
+      }
+    }
+    return Array.from(map.entries())
+      .map(([name, opts]) => ({
+        name,
+        options: Array.from(opts).sort((a, b) => a.localeCompare(b, 'ja')),
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ja'));
+  }, [categoryDefinitions, records]);
+
+  const hasActiveFilters = useMemo(
+    () => Object.values(filters).some(v => v.trim() !== ''),
+    [filters]
+  );
+
+  const filteredRecords = useMemo(
+    () => (hasActiveFilters ? records.filter(r => recordMatchesFilters(r, filters)) : records),
+    [records, filters, hasActiveFilters]
+  );
+
+  useEffect(() => {
+    if (selectedId && !filteredRecords.some(r => r.id === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [filteredRecords, selectedId]);
+
   const recordsByDay = useMemo(() => {
     const map = new Map<string, WorkRecord[]>();
     weekDays.forEach(d => map.set(format(d, 'yyyy-MM-dd'), []));
-    records.forEach(r => {
+    filteredRecords.forEach(r => {
       const eff = dragPreview?.id === r.id ? dragPreview : r;
       const key = format(parseISO(eff.startAt), 'yyyy-MM-dd');
       if (map.has(key)) map.get(key)!.push(r);
     });
     return map;
-  }, [records, weekDays, dragPreview]);
+  }, [filteredRecords, weekDays, dragPreview]);
 
   const totalMinutes = useMemo(
     () =>
@@ -276,14 +339,27 @@ export default function WeekTimeline({
   /** 日時一覧と同様、開始日時の属する月で集計（週ナビの基準日の月） */
   const monthTotalMinutes = useMemo(
     () =>
-      records.reduce((sum, r) => {
+      filteredRecords.reduce((sum, r) => {
         const eff = dragPreview?.id === r.id ? dragPreview : r;
         const s = parseISO(eff.startAt);
         if (!isSameMonth(s, baseDate)) return sum;
         return sum + Math.max(0, differenceInMinutes(parseISO(eff.endAt), parseISO(eff.startAt)));
       }, 0),
-    [records, baseDate, dragPreview]
+    [filteredRecords, baseDate, dragPreview]
   );
+
+  function setFilter(dim: string, value: string) {
+    setFilters(prev => {
+      const next = { ...prev };
+      if (!value) delete next[dim];
+      else next[dim] = value;
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setFilters({});
+  }
 
   const shiftRecord = useCallback(
     (id: string, startDelta: number, endDelta: number) => {
@@ -506,12 +582,13 @@ export default function WeekTimeline({
 
   function handleMemoSave() {
     if (!memoEdit) return;
-    const updated: WorkRecord = {
-      ...memoEdit.record,
-      memo: memoEdit.memo,
-      category: memoEdit.category.trim(),
-      categoryOption: memoEdit.categoryOption.trim(),
-    };
+    const updated: WorkRecord = applyCategoriesToRecord(
+      {
+        ...memoEdit.record,
+        memo: memoEdit.memo,
+      },
+      memoEdit.categories
+    );
     onRecordsChange(updateRecord(updated));
     setMemoEdit(null);
   }
@@ -547,13 +624,14 @@ export default function WeekTimeline({
 
       <div className="week-status-row">
         <p className="week-total">
-          週合計:{' '}
+          週合計{hasActiveFilters ? '（絞り込み）' : ''}:{' '}
           <strong>
             {formatHoursMinutes(totalMinutes)}
           </strong>
         </p>
         <p className="week-total week-total--month">
-          当月合計（{format(baseDate, 'yyyy年M月', { locale: ja })}）:{' '}
+          当月合計（{format(baseDate, 'yyyy年M月', { locale: ja })}）
+          {hasActiveFilters ? '（絞り込み）' : ''}:{' '}
           <strong>{formatHoursMinutes(monthTotalMinutes)}</strong>
         </p>
         <p className="week-memo-hint">ブロックを右クリックでメモを編集</p>
@@ -570,6 +648,36 @@ export default function WeekTimeline({
           </p>
         )}
       </div>
+
+      {filterDimensions.length > 0 ? (
+        <div className="week-filters" role="group" aria-label="カテゴリフィルター">
+          {filterDimensions.map(dim => (
+            <label key={dim.name} className="week-filters__field">
+              <span>{dim.name}</span>
+              <select
+                value={filters[dim.name] ?? ''}
+                onChange={e => setFilter(dim.name, e.target.value)}
+                aria-label={`${dim.name}で絞り込み`}
+              >
+                <option value="">すべて</option>
+                <option value={FILTER_UNSET}>（未設定）</option>
+                {dim.options.map(o => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+          {hasActiveFilters && (
+            <button type="button" className="btn-nav week-filters__clear" onClick={clearFilters}>
+              クリア
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="week-filters-empty">カテゴリを設定すると、ここで絞り込めます</p>
+      )}
 
       <div
         ref={gridRef}
@@ -616,7 +724,7 @@ export default function WeekTimeline({
           const key = format(day, 'yyyy-MM-dd');
           const dayRecs = recordsByDay.get(key) ?? [];
           const isToday = isSameDay(day, new Date());
-          const dayMinutes = minutesOverlappingCalendarDay(day, records, dragPreview);
+          const dayMinutes = minutesOverlappingCalendarDay(day, filteredRecords, dragPreview);
 
           return (
             <div key={key} className={`timeline-day ${isToday ? 'timeline-day--today' : ''}`}>
@@ -672,8 +780,7 @@ export default function WeekTimeline({
                         setMemoEdit({
                           record: rec,
                           memo: rec.memo,
-                          category: rec.category ?? '',
-                          categoryOption: rec.categoryOption ?? '',
+                          categories: getRecordCategories(rec),
                         });
                       }}
                       onMouseEnter={e => {
@@ -749,12 +856,11 @@ export default function WeekTimeline({
             </div>
             <div className="modal__body">
               <CategoryPicker
-                category={memoEdit.category}
-                categoryOption={memoEdit.categoryOption}
+                value={memoEdit.categories}
                 definitions={categoryDefinitions}
                 onDefinitionsChange={onCategoryDefinitionsChange}
-                onChange={({ category, categoryOption }) =>
-                  setMemoEdit(m => (m ? { ...m, category, categoryOption } : null))
+                onChange={categories =>
+                  setMemoEdit(m => (m ? { ...m, categories } : null))
                 }
                 idPrefix="timeline"
                 compact
@@ -813,9 +919,9 @@ export default function WeekTimeline({
               {format(s, 'HH:mm', { locale: ja })} 〜 {format(e, 'HH:mm', { locale: ja })}
             </div>
           )}
-          {(tooltip.record.category?.trim() || tooltip.record.categoryOption?.trim()) && (
+          {getRecordCategories(tooltip.record).length > 0 && (
             <div className="tooltip-category">
-              {formatCategoryLabel(tooltip.record.category, tooltip.record.categoryOption)}
+              {formatRecordCategories(tooltip.record)}
             </div>
           )}
           {tooltip.record.memo && <div className="tooltip-memo">{tooltip.record.memo}</div>}

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import type { WorkRecord } from '../types';
 import { format, parseISO } from 'date-fns';
+import { formatRecordCategories, getRecordCategories } from '../utils/dateUtils';
 
 interface Props {
   record: WorkRecord;
@@ -37,12 +38,10 @@ export default function DeleteConfirmModal({ record, onConfirm, onCancel }: Prop
               <span className="delete-modal__label">終了</span>
               <span className="delete-modal__value">{end}</span>
             </div>
-            {(record.category?.trim() || record.categoryOption?.trim()) && (
+            {getRecordCategories(record).length > 0 && (
               <div className="delete-modal__row">
                 <span className="delete-modal__label">カテゴリ</span>
-                <span className="delete-modal__value">
-                  {[record.category, record.categoryOption].filter(s => s?.trim()).join(' / ')}
-                </span>
+                <span className="delete-modal__value">{formatRecordCategories(record)}</span>
               </div>
             )}
             {record.memo && (

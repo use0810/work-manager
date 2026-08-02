@@ -1,11 +1,22 @@
+export interface CategoryAssignment {
+  /** カテゴリ名（例: プロジェクト） */
+  name: string;
+  /** 選択肢（例: A案件）。空可 */
+  option: string;
+}
+
 export interface WorkRecord {
   id: string;
   startAt: string; // ISO8601
   endAt: string;   // ISO8601
-  /** カテゴリ名（グループ。空文字可・既存互換） */
+  /**
+   * 後方互換用。categories[0] と同期して保存する。
+   * 新規コードは categories を参照すること。
+   */
   category: string;
-  /** カテゴリ内の選択肢（空文字可） */
   categoryOption: string;
+  /** 複数カテゴリの選択（プロジェクト＋業務内容など） */
+  categories: CategoryAssignment[];
   memo: string;
 }
 
@@ -25,3 +36,4 @@ export interface CategoryDefinition {
 }
 
 export const MAX_CATEGORY_OPTIONS = 10;
+export const MAX_CATEGORY_ASSIGNMENTS = 50;

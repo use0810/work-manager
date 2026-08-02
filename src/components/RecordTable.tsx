@@ -8,7 +8,7 @@ import {
   formatRecordDateTime,
   isoToDatetimeLocal,
 } from '../utils/datetimeLocal';
-import { formatHoursMinutes, formatCategoryLabel } from '../utils/dateUtils';
+import { formatHoursMinutes, formatRecordCategories, getRecordCategories } from '../utils/dateUtils';
 
 interface Props {
   records: WorkRecord[];
@@ -138,10 +138,8 @@ export default function RecordTable({ records, onUpdate, onDelete, onCopy, onMem
                 }}
                 title="クリックでカテゴリ・メモを編集"
               >
-                {rec.category?.trim() || rec.categoryOption?.trim() ? (
-                  <span className="category-badge">
-                    {formatCategoryLabel(rec.category, rec.categoryOption)}
-                  </span>
+                {getRecordCategories(rec).length > 0 ? (
+                  <span className="category-badge">{formatRecordCategories(rec)}</span>
                 ) : (
                   <span className="memo-empty">未分類</span>
                 )}

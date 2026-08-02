@@ -221,7 +221,11 @@ export default function App() {
           />
         )}
         {tab === 'summary' && (
-          <SummaryTab records={records} refreshKey={archiveRefresh} />
+          <SummaryTab
+            records={records}
+            categoryDefinitions={categoryDefinitions}
+            refreshKey={archiveRefresh}
+          />
         )}
         {tab === 'archive' && (
           <ArchiveTab
