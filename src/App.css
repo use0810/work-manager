@@ -2857,6 +2857,140 @@ select:focus-visible,
   max-width: 720px;
 }
 
+.summary-tab--wide {
+  max-width: min(1100px, 100%);
+}
+
+.summary-axis-pickers {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.summary-axis-pickers__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1 1 160px;
+  min-width: 140px;
+}
+
+.summary-axis-pickers__field > span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text2);
+}
+
+.summary-axis-pickers__field select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 10px;
+  min-height: 40px;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+.summary-axis-pickers__swap {
+  flex: 0 0 auto;
+  align-self: end;
+}
+
+.summary-axis-hint {
+  margin: -8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text2);
+  line-height: 1.45;
+}
+
+.summary-week-matrices {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.summary-week-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.summary-week-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.summary-week-card__head h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.summary-week-card__head strong {
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.95rem;
+}
+
+.summary-table-wrap--scroll {
+  overflow-x: auto;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.summary-matrix {
+  min-width: 420px;
+}
+
+.summary-matrix th,
+.summary-matrix td {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-matrix thead th,
+.summary-matrix tbody th {
+  text-align: left;
+}
+
+.summary-matrix__corner {
+  min-width: 96px;
+}
+
+.summary-matrix__cell {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.summary-matrix__empty {
+  color: var(--text2);
+  opacity: 0.55;
+}
+
+.summary-matrix__total {
+  font-weight: 700;
+  background: var(--bg);
+}
+
+.summary-matrix__foot th,
+.summary-matrix__foot td {
+  border-top: 1px solid var(--border);
+}
+
 .summary-nav {
   display: flex;
   align-items: center;

@@ -8,7 +8,9 @@ import {
   recordsForYearMonth,
   summarizeByCategoryDimension,
   summarizeByMonths,
+  summarizeMonthWeeksTwoAxis,
   totalWorkMinutes,
+  twoAxisCellMinutes,
   yearMonthFromIso,
 } from '../utils/dateUtils';
 
@@ -18,7 +20,16 @@ interface Props {
   refreshKey?: number;
 }
 
-type ViewMode = 'month' | 'overview';
+type ViewMode = 'month' | 'weekly2d' | 'overview';
+
+function formatCellMinutes(mins: number): string {
+  if (mins <= 0) return '—';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h === 0) return `${m}分`;
+  if (m === 0) return `${h}時間`;
+  return `${h}:${String(m).padStart(2, '0')}`;
+}
 
 export default function SummaryTab({
   records,
@@ -41,6 +52,8 @@ export default function SummaryTab({
   const [view, setView] = useState<ViewMode>('month');
   /** 空文字 = 全カテゴリをフラット表示 / それ以外 = その次元の選択肢別 */
   const [dimension, setDimension] = useState('');
+  const [rowDim, setRowDim] = useState('');
+  const [colDim, setColDim] = useState('');
 
   useEffect(() => {
     if (months.length === 0) {
@@ -74,11 +87,35 @@ export default function SummaryTab({
     if (dimension && !dimensionNames.includes(dimension)) setDimension('');
   }, [dimension, dimensionNames]);
 
+  useEffect(() => {
+    if (dimensionNames.length < 2) {
+      setRowDim('');
+      return;
+    }
+    setRowDim(prev => (prev && dimensionNames.includes(prev) ? prev : dimensionNames[0]));
+  }, [dimensionNames]);
+
+  useEffect(() => {
+    if (dimensionNames.length < 2 || !rowDim) {
+      setColDim('');
+      return;
+    }
+    setColDim(prev => {
+      if (prev && dimensionNames.includes(prev) && prev !== rowDim) return prev;
+      return dimensionNames.find(n => n !== rowDim) ?? '';
+    });
+  }, [dimensionNames, rowDim]);
+
   const rows = useMemo(
     () => summarizeByCategoryDimension(monthRecords, dimension || undefined),
     [monthRecords, dimension]
   );
   const totalMins = totalWorkMinutes(monthRecords);
+
+  const weekMatrices = useMemo(() => {
+    if (!rowDim || !colDim || rowDim === colDim) return [];
+    return summarizeMonthWeeksTwoAxis(monthRecords, rowDim, colDim);
+  }, [monthRecords, rowDim, colDim]);
 
   const overviewMonths = useMemo(() => months.slice(0, 12).reverse(), [months]);
   const monthBars = useMemo(
@@ -99,12 +136,48 @@ export default function SummaryTab({
     setMonth(months[monthIndex - 1]);
   }
 
+  function swapAxes() {
+    setRowDim(colDim);
+    setColDim(rowDim);
+  }
+
   const breakdownLabel = dimension
     ? `${dimension}の選択肢`
     : 'カテゴリ / 選択肢';
 
+  const monthChrome = (
+    <>
+      <div className="summary-nav">
+        <button
+          type="button"
+          className="btn-nav"
+          onClick={goPrev}
+          disabled={monthIndex < 0 || monthIndex >= months.length - 1}
+        >
+          ‹ 前月
+        </button>
+        <h2 className="summary-nav__label">{month}</h2>
+        <button type="button" className="btn-nav" onClick={goNext} disabled={monthIndex <= 0}>
+          次月 ›
+        </button>
+      </div>
+
+      <div className="summary-total">
+        <div className="summary-total__main">
+          <span className="summary-total__label">月合計</span>
+          <strong className="summary-total__value">{formatHoursMinutes(totalMins)}</strong>
+        </div>
+        <div className="summary-total__meta">
+          {monthRecords.length}件
+          {source === 'archive' ? ' · アーカイブ最新版から集計' : null}
+          {source === 'list' ? ' · 日時一覧から集計' : null}
+        </div>
+      </div>
+    </>
+  );
+
   return (
-    <div className="summary-tab">
+    <div className={`summary-tab ${view === 'weekly2d' ? 'summary-tab--wide' : ''}`}>
       <div className="summary-view-toggle" role="tablist" aria-label="集計の表示">
         <button
           type="button"
@@ -114,6 +187,15 @@ export default function SummaryTab({
           onClick={() => setView('month')}
         >
           月別集計
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={view === 'weekly2d'}
+          className={`summary-view-toggle__btn ${view === 'weekly2d' ? 'is-active' : ''}`}
+          onClick={() => setView('weekly2d')}
+        >
+          二軸週計
         </button>
         <button
           type="button"
@@ -151,39 +233,133 @@ export default function SummaryTab({
             棒をクリックせず、上の「月別集計」で詳細を確認できます。
           </p>
         </div>
+      ) : view === 'weekly2d' ? (
+        <>
+          {monthChrome}
+
+          {dimensionNames.length < 2 ? (
+            <p className="empty-state">
+              二軸週計にはカテゴリが2つ以上必要です。設定の「カテゴリ管理」で作成してください。
+            </p>
+          ) : (
+            <>
+              <div className="summary-axis-pickers" role="group" aria-label="集計の二軸">
+                <label className="summary-axis-pickers__field">
+                  <span>行（縦軸）</span>
+                  <select
+                    value={rowDim}
+                    onChange={e => {
+                      const next = e.target.value;
+                      setRowDim(next);
+                      if (next === colDim) {
+                        const alt = dimensionNames.find(n => n !== next);
+                        if (alt) setColDim(alt);
+                      }
+                    }}
+                  >
+                    {dimensionNames.map(n => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button type="button" className="btn-nav summary-axis-pickers__swap" onClick={swapAxes}>
+                  ⇄ 入替
+                </button>
+                <label className="summary-axis-pickers__field">
+                  <span>列（横軸）</span>
+                  <select
+                    value={colDim}
+                    onChange={e => {
+                      const next = e.target.value;
+                      setColDim(next);
+                      if (next === rowDim) {
+                        const alt = dimensionNames.find(n => n !== next);
+                        if (alt) setRowDim(alt);
+                      }
+                    }}
+                  >
+                    {dimensionNames.map(n => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+
+              <p className="summary-axis-hint">
+                {rowDim} × {colDim} を週ごと（月曜始まり）に集計します。1件の時間は1回だけ加算します。
+              </p>
+
+              {weekMatrices.length === 0 ? (
+                <p className="empty-state">この月の記録はありません。</p>
+              ) : (
+                <div className="summary-week-matrices">
+                  {weekMatrices.map(week => (
+                    <section key={week.weekStartKey} className="summary-week-card">
+                      <header className="summary-week-card__head">
+                        <h3>{week.weekLabel}</h3>
+                        <strong>{formatHoursMinutes(week.totalMinutes)}</strong>
+                      </header>
+                      <div className="summary-table-wrap summary-table-wrap--scroll">
+                        <table className="summary-table summary-matrix">
+                          <thead>
+                            <tr>
+                              <th className="summary-matrix__corner">
+                                {rowDim} \ {colDim}
+                              </th>
+                              {week.colKeys.map(col => (
+                                <th key={col}>{col}</th>
+                              ))}
+                              <th className="summary-matrix__total">計</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {week.rowKeys.map(row => (
+                              <tr key={row}>
+                                <th scope="row">{row}</th>
+                                {week.colKeys.map(col => {
+                                  const mins = twoAxisCellMinutes(week, row, col);
+                                  return (
+                                    <td
+                                      key={col}
+                                      className={mins > 0 ? 'summary-matrix__cell' : 'summary-matrix__empty'}
+                                    >
+                                      {formatCellMinutes(mins)}
+                                    </td>
+                                  );
+                                })}
+                                <td className="summary-matrix__total">
+                                  {formatCellMinutes(week.rowTotals[row] ?? 0)}
+                                </td>
+                              </tr>
+                            ))}
+                            <tr className="summary-matrix__foot">
+                              <th scope="row">計</th>
+                              {week.colKeys.map(col => (
+                                <td key={col} className="summary-matrix__total">
+                                  {formatCellMinutes(week.colTotals[col] ?? 0)}
+                                </td>
+                              ))}
+                              <td className="summary-matrix__total">
+                                {formatCellMinutes(week.totalMinutes)}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </section>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </>
       ) : (
         <>
-          <div className="summary-nav">
-            <button
-              type="button"
-              className="btn-nav"
-              onClick={goPrev}
-              disabled={monthIndex < 0 || monthIndex >= months.length - 1}
-            >
-              ‹ 前月
-            </button>
-            <h2 className="summary-nav__label">{month}</h2>
-            <button
-              type="button"
-              className="btn-nav"
-              onClick={goNext}
-              disabled={monthIndex <= 0}
-            >
-              次月 ›
-            </button>
-          </div>
-
-          <div className="summary-total">
-            <div className="summary-total__main">
-              <span className="summary-total__label">月合計</span>
-              <strong className="summary-total__value">{formatHoursMinutes(totalMins)}</strong>
-            </div>
-            <div className="summary-total__meta">
-              {monthRecords.length}件
-              {source === 'archive' ? ' · アーカイブ最新版から集計' : null}
-              {source === 'list' ? ' · 日時一覧から集計' : null}
-            </div>
-          </div>
+          {monthChrome}
 
           <div className="summary-view-toggle summary-view-toggle--sub" role="tablist" aria-label="内訳">
             <button
