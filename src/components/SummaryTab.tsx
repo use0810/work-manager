@@ -8,7 +8,7 @@ import {
   recordsForYearMonth,
   summarizeByCategoryDimension,
   summarizeByMonths,
-  summarizeMonthWeeksTwoAxis,
+  summarizeTwoAxis,
   totalWorkMinutes,
   twoAxisCellMinutes,
   yearMonthFromIso,
@@ -20,7 +20,7 @@ interface Props {
   refreshKey?: number;
 }
 
-type ViewMode = 'month' | 'weekly2d' | 'overview';
+type ViewMode = 'month' | 'twoAxis' | 'overview';
 
 function formatCellMinutes(mins: number): string {
   if (mins <= 0) return '—';
@@ -112,9 +112,9 @@ export default function SummaryTab({
   );
   const totalMins = totalWorkMinutes(monthRecords);
 
-  const weekMatrices = useMemo(() => {
-    if (!rowDim || !colDim || rowDim === colDim) return [];
-    return summarizeMonthWeeksTwoAxis(monthRecords, rowDim, colDim);
+  const twoAxisMatrix = useMemo(() => {
+    if (!rowDim || !colDim || rowDim === colDim) return null;
+    return summarizeTwoAxis(monthRecords, rowDim, colDim);
   }, [monthRecords, rowDim, colDim]);
 
   const overviewMonths = useMemo(() => months.slice(0, 12).reverse(), [months]);
@@ -177,7 +177,7 @@ export default function SummaryTab({
   );
 
   return (
-    <div className={`summary-tab ${view === 'weekly2d' ? 'summary-tab--wide' : ''}`}>
+    <div className={`summary-tab ${view === 'twoAxis' ? 'summary-tab--wide' : ''}`}>
       <div className="summary-view-toggle" role="tablist" aria-label="集計の表示">
         <button
           type="button"
@@ -191,11 +191,11 @@ export default function SummaryTab({
         <button
           type="button"
           role="tab"
-          aria-selected={view === 'weekly2d'}
-          className={`summary-view-toggle__btn ${view === 'weekly2d' ? 'is-active' : ''}`}
-          onClick={() => setView('weekly2d')}
+          aria-selected={view === 'twoAxis'}
+          className={`summary-view-toggle__btn ${view === 'twoAxis' ? 'is-active' : ''}`}
+          onClick={() => setView('twoAxis')}
         >
-          二軸週計
+          二軸集計
         </button>
         <button
           type="button"
@@ -233,13 +233,13 @@ export default function SummaryTab({
             棒をクリックせず、上の「月別集計」で詳細を確認できます。
           </p>
         </div>
-      ) : view === 'weekly2d' ? (
+      ) : view === 'twoAxis' ? (
         <>
           {monthChrome}
 
           {dimensionNames.length < 2 ? (
             <p className="empty-state">
-              二軸週計にはカテゴリが2つ以上必要です。設定の「カテゴリ管理」で作成してください。
+              二軸集計にはカテゴリが2つ以上必要です。設定の「カテゴリ管理」で作成してください。
             </p>
           ) : (
             <>
@@ -290,69 +290,67 @@ export default function SummaryTab({
               </div>
 
               <p className="summary-axis-hint">
-                {rowDim} × {colDim} を週ごと（月曜始まり）に集計します。1件の時間は1回だけ加算します。
+                {rowDim} × {colDim} をこの月全体で集計します。1件の時間は1回だけ加算します。
               </p>
 
-              {weekMatrices.length === 0 ? (
+              {!twoAxisMatrix ? (
                 <p className="empty-state">この月の記録はありません。</p>
               ) : (
-                <div className="summary-week-matrices">
-                  {weekMatrices.map(week => (
-                    <section key={week.weekStartKey} className="summary-week-card">
-                      <header className="summary-week-card__head">
-                        <h3>{week.weekLabel}</h3>
-                        <strong>{formatHoursMinutes(week.totalMinutes)}</strong>
-                      </header>
-                      <div className="summary-table-wrap summary-table-wrap--scroll">
-                        <table className="summary-table summary-matrix">
-                          <thead>
-                            <tr>
-                              <th className="summary-matrix__corner">
-                                {rowDim} \ {colDim}
-                              </th>
-                              {week.colKeys.map(col => (
-                                <th key={col}>{col}</th>
-                              ))}
-                              <th className="summary-matrix__total">計</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {week.rowKeys.map(row => (
-                              <tr key={row}>
-                                <th scope="row">{row}</th>
-                                {week.colKeys.map(col => {
-                                  const mins = twoAxisCellMinutes(week, row, col);
-                                  return (
-                                    <td
-                                      key={col}
-                                      className={mins > 0 ? 'summary-matrix__cell' : 'summary-matrix__empty'}
-                                    >
-                                      {formatCellMinutes(mins)}
-                                    </td>
-                                  );
-                                })}
-                                <td className="summary-matrix__total">
-                                  {formatCellMinutes(week.rowTotals[row] ?? 0)}
+                <section className="summary-week-card">
+                  <header className="summary-week-card__head">
+                    <h3>
+                      {rowDim} × {colDim}
+                    </h3>
+                    <strong>{formatHoursMinutes(twoAxisMatrix.totalMinutes)}</strong>
+                  </header>
+                  <div className="summary-table-wrap summary-table-wrap--scroll">
+                    <table className="summary-table summary-matrix">
+                      <thead>
+                        <tr>
+                          <th className="summary-matrix__corner">
+                            {rowDim} \ {colDim}
+                          </th>
+                          {twoAxisMatrix.colKeys.map(col => (
+                            <th key={col}>{col}</th>
+                          ))}
+                          <th className="summary-matrix__total">計</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {twoAxisMatrix.rowKeys.map(row => (
+                          <tr key={row}>
+                            <th scope="row">{row}</th>
+                            {twoAxisMatrix.colKeys.map(col => {
+                              const mins = twoAxisCellMinutes(twoAxisMatrix, row, col);
+                              return (
+                                <td
+                                  key={col}
+                                  className={mins > 0 ? 'summary-matrix__cell' : 'summary-matrix__empty'}
+                                >
+                                  {formatCellMinutes(mins)}
                                 </td>
-                              </tr>
-                            ))}
-                            <tr className="summary-matrix__foot">
-                              <th scope="row">計</th>
-                              {week.colKeys.map(col => (
-                                <td key={col} className="summary-matrix__total">
-                                  {formatCellMinutes(week.colTotals[col] ?? 0)}
-                                </td>
-                              ))}
-                              <td className="summary-matrix__total">
-                                {formatCellMinutes(week.totalMinutes)}
-                              </td>
-                            </tr>
-                          </tbody>
-                        </table>
-                      </div>
-                    </section>
-                  ))}
-                </div>
+                              );
+                            })}
+                            <td className="summary-matrix__total">
+                              {formatCellMinutes(twoAxisMatrix.rowTotals[row] ?? 0)}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="summary-matrix__foot">
+                          <th scope="row">計</th>
+                          {twoAxisMatrix.colKeys.map(col => (
+                            <td key={col} className="summary-matrix__total">
+                              {formatCellMinutes(twoAxisMatrix.colTotals[col] ?? 0)}
+                            </td>
+                          ))}
+                          <td className="summary-matrix__total">
+                            {formatCellMinutes(twoAxisMatrix.totalMinutes)}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
               )}
             </>
           )}

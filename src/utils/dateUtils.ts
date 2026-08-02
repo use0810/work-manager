@@ -182,87 +182,67 @@ function cellKey(row: string, col: string): string {
 }
 
 /**
- * 月内レコードを週（月曜始まり）ごとに分け、二軸カテゴリのクロス集計にする。
+ * 二軸カテゴリのクロス集計（期間全体で1表）。
  * 時間はレコード単位で1回だけ加算（二重計上なし）。
  */
-export function summarizeMonthWeeksTwoAxis(
+export function summarizeTwoAxis(
   records: WorkRecord[],
   rowDimension: string,
   colDimension: string
-): TwoAxisWeekSummary[] {
+): TwoAxisWeekSummary | null {
   const rowDim = rowDimension.trim();
   const colDim = colDimension.trim();
-  if (!rowDim || !colDim || rowDim === colDim) return [];
+  if (!rowDim || !colDim || rowDim === colDim) return null;
 
-  type WeekAcc = {
-    weekStart: Date;
-    cells: Map<string, number>;
-    rowKeys: Set<string>;
-    colKeys: Set<string>;
-    total: number;
-  };
-  const weeks = new Map<string, WeekAcc>();
+  const cells = new Map<string, number>();
+  const rowKeySet = new Set<string>();
+  const colKeySet = new Set<string>();
+  let totalMinutes = 0;
 
   for (const r of records) {
     const mins = Math.max(0, differenceInMinutes(parseISO(r.endAt), parseISO(r.startAt)));
     if (mins <= 0) continue;
-    const start = parseISO(r.startAt);
-    const weekStart = startOfWeek(start, { weekStartsOn: 1 });
-    const weekStartKey = format(weekStart, 'yyyy-MM-dd');
-    let acc = weeks.get(weekStartKey);
-    if (!acc) {
-      acc = {
-        weekStart,
-        cells: new Map(),
-        rowKeys: new Set(),
-        colKeys: new Set(),
-        total: 0,
-      };
-      weeks.set(weekStartKey, acc);
-    }
     const row = optionForDimension(r, rowDim);
     const col = optionForDimension(r, colDim);
-    acc.rowKeys.add(row);
-    acc.colKeys.add(col);
+    rowKeySet.add(row);
+    colKeySet.add(col);
     const k = cellKey(row, col);
-    acc.cells.set(k, (acc.cells.get(k) ?? 0) + mins);
-    acc.total += mins;
+    cells.set(k, (cells.get(k) ?? 0) + mins);
+    totalMinutes += mins;
   }
 
-  return Array.from(weeks.entries())
-    .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([, acc]) => {
-      const rowKeys = sortAxisKeys(acc.rowKeys);
-      const colKeys = sortAxisKeys(acc.colKeys);
-      const cells: Record<string, number> = {};
-      const rowTotals: Record<string, number> = {};
-      const colTotals: Record<string, number> = {};
-      for (const [k, v] of acc.cells) {
-        cells[k] = v;
-        const [row, col] = k.split('\t');
-        rowTotals[row] = (rowTotals[row] ?? 0) + v;
-        colTotals[col] = (colTotals[col] ?? 0) + v;
-      }
-      const weekEnd = addDays(acc.weekStart, 6);
-      return {
-        weekStartKey: format(acc.weekStart, 'yyyy-MM-dd'),
-        weekLabel: `${format(acc.weekStart, 'M/d')}〜${format(weekEnd, 'M/d')}`,
-        rowKeys,
-        colKeys,
-        cells,
-        rowTotals,
-        colTotals,
-        totalMinutes: acc.total,
-      };
-    });
+  if (totalMinutes <= 0 && cells.size === 0) return null;
+
+  const rowKeys = sortAxisKeys(rowKeySet);
+  const colKeys = sortAxisKeys(colKeySet);
+  const cellRecord: Record<string, number> = {};
+  const rowTotals: Record<string, number> = {};
+  const colTotals: Record<string, number> = {};
+  for (const [k, v] of cells) {
+    cellRecord[k] = v;
+    const [row, col] = k.split('\t');
+    rowTotals[row] = (rowTotals[row] ?? 0) + v;
+    colTotals[col] = (colTotals[col] ?? 0) + v;
+  }
+
+  return {
+    weekStartKey: 'all',
+    weekLabel: '全体',
+    rowKeys,
+    colKeys,
+    cells: cellRecord,
+    rowTotals,
+    colTotals,
+    totalMinutes,
+  };
 }
 
 export function twoAxisCellMinutes(
-  week: TwoAxisWeekSummary,
+  matrix: TwoAxisWeekSummary,
   row: string,
   col: string
 ): number {
-  return week.cells[cellKey(row, col)] ?? 0;
+  return matrix.cells[cellKey(row, col)] ?? 0;
 }
 
 export interface MonthSummaryRow {
